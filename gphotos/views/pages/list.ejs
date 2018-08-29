@@ -1,0 +1,146 @@
+<% include ../partials/head %>
+
+<% include ../partials/dialogs %>
+<section class="sample-content">
+	<h2>List Files from Google Drive</h2>
+	<p class="subhead mdl-color-text--grey-700">List Photos Files in Library. Select TRASH or MAIL drive and include data ranges</p>
+	<form id="filter">
+		<div class="filter-group">
+   		 <h3>List Filters</h3>
+   	 	<div class="mdl-grid">
+
+			<label class="mdl-cell mdl-cell--4-col mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="includedcategory_TRASH">
+			<input type="checkbox" name="includedCategories" id="includedcategory_TRASH" class="mdl-checkbox__input" value="TRASH">
+			<span class="mdl-checkbox__label">TRASH</span>
+      </label>
+      <label class="mdl-cell mdl-cell--4-col mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="includedcategory_LIMIT">
+      <input type="checkbox" name="includedCategories" id="includedcategory_LIMIT" class="mdl-checkbox__input" value="LIMIT">
+      <span class="mdl-checkbox__label">LIMIT</span>
+			</label>
+    </div>
+</div>
+
+	<div class="filter-group">
+	    <h3>Apply date filters</h3>
+	    <p><label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="dateFilterNone">
+	        <input type="radio" id="dateFilterNone" class="mdl-radio__button" name="dateFilter" value="none" checked>
+	        <span class="mdl-radio__label">No date filter</span>
+	    </label>
+		</p>
+
+	    <p>
+			<label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="dateFilterExact">
+	        <input type="radio" id="dateFilterExact" class="mdl-radio__button" name="dateFilter" value="exact">
+	        <span class="mdl-radio__label">Exact date Filter</span>
+	    </label>
+		</p>
+	    <!-- Exact date -->
+	    <div id="rowDateExact" style="display:none">
+	        <h5>Date</h5>
+
+	        <div class="mdl-grid">
+	            <div class="mdl-cell mdl-cell--4-col">
+
+	                <div class="mdl-textfield mdl-js-textfield">
+	                    <input class="mdl-textfield__input" type="text" pattern="-?[0-9]*(\.[0-9]+)?" id="exactYear" name="exactYear">
+	                    <label class="mdl-textfield__label" for="exactYear">Year (YYYY)</label>
+	                    <span class="mdl-textfield__error">Input is not a number!</span>
+	                </div>
+	            </div>
+	            <div class="mdl-cell mdl-cell--4-col">
+	                <div class="mdl-textfield mdl-js-textfield">
+	                    <input class="mdl-textfield__input" type="text" pattern="-?[0-9]*(\.[0-9]+)?" id="exactMonth" name="exactMonth">
+	                    <label class="mdl-textfield__label" for="exactMonth">Month (MM)</label>
+	                    <span class="mdl-textfield__error">Input is not a number!</span>
+	                </div>
+	            </div>
+	            <div class="mdl-cell mdl-cell--4-col">
+	                <div class="mdl-textfield mdl-js-textfield">
+	                    <input class="mdl-textfield__input" type="text" pattern="-?[0-9]*(\.[0-9]+)?" id="exactDay" name="exactDay">
+	                    <label class="mdl-textfield__label" for="exactDay">Day (DD)</label>
+	                    <span class="mdl-textfield__error">Input is not a number!</span>
+	                </div>
+	            </div>
+	        </div>
+	</div>
+
+
+    <p>
+	<label class="mdl-radio mdl-js-radio mdl-js-ripple-effect" for="dateFilterRange">
+        <input type="radio" id="dateFilterRange" class="mdl-radio__button" name="dateFilter" value="range">
+        <span class="mdl-radio__label">Range date filter</span>
+    </label>
+	</p>
+
+    <div id="rowDateRange" style="display:none">
+        <h5>Start date</h5>
+        <div class="mdl-grid">
+            <div class="mdl-cell mdl-cell--4-col">
+                <div class="mdl-textfield mdl-js-textfield">
+                    <input class="mdl-textfield__input" type="text" pattern="-?[0-9]*(\.[0-9]+)?" id="startYear" name="startYear">
+                    <label class="mdl-textfield__label" for="startYear">Year (YYYY)</label>
+                    <span class="mdl-textfield__error">Input is not a number!</span>
+                </div>
+            </div>
+            <div class="mdl-cell mdl-cell--4-col">
+                <div class="mdl-textfield mdl-js-textfield">
+                    <input class="mdl-textfield__input" type="text" pattern="-?[0-9]*(\.[0-9]+)?" id="startMonth" name="startMonth">
+                    <label class="mdl-textfield__label" for="startMonth">Month (MM)</label>
+                    <span class="mdl-textfield__error">Input is not a number!</span>
+                </div>
+            </div>
+            <div class="mdl-cell mdl-cell--4-col">
+                <div class="mdl-textfield mdl-js-textfield">
+                    <input class="mdl-textfield__input" type="text" pattern="-?[0-9]*(\.[0-9]+)?" id="startDay" name="startDay">
+                    <label class="mdl-textfield__label" for="startDay">Day (DD)</label>
+                    <span class="mdl-textfield__error">Input is not a number!</span>
+                </div>
+            </div>
+        </div>
+
+        <h4>End date</h4>
+        <div class="mdl-grid">
+            <div class="mdl-cell mdl-cell--4-col">
+                <div class="mdl-textfield mdl-js-textfield">
+                    <input class="mdl-textfield__input" type="text" pattern="-?[0-9]*(\.[0-9]+)?" id="endYear" name="endYear">
+                    <label class="mdl-textfield__label" for="endYear">Year (YYYY)</label>
+                    <span class="mdl-textfield__error">Input is not a number!</span>
+                </div>
+            </div>
+            <div class="mdl-cell mdl-cell--4-col">
+                <div class="mdl-textfield mdl-js-textfield">
+                    <input class="mdl-textfield__input" type="text" pattern="-?[0-9]*(\.[0-9]+)?" id="endMonth" name="endMonth">
+                    <label class="mdl-textfield__label" for="endMonth">Month (MM)</label>
+                    <span class="mdl-textfield__error">Input is not a number!</span>
+                </div>
+            </div>
+            <div class="mdl-cell mdl-cell--4-col">
+                <div class="mdl-textfield mdl-js-textfield">
+                    <input class="mdl-textfield__input" type="text" pattern="-?[0-9]*(\.[0-9]+)?" id="endDay" name="endDay">
+                    <label class="mdl-textfield__label" for="endDay">Day (DD)</label>
+                    <span class="mdl-textfield__error">Input is not a number!</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+    <!-- Accent-colored raised button with ripple -->
+    <div class="floating-button">
+            <button  type="submit" class="mdl-button mdl-js-button mdl-button--raised mdl-button--accent">
+                <i class="material-icons">list</i>
+				<span class="float-btn-label">List</span>
+            </button>
+        </div>
+
+
+
+
+</form>
+</section>
+
+<% include ../partials/js %>
+<script src="/js/list.js"></script>
+
+<% include ../partials/footer %>

@@ -1,0 +1,31 @@
+{
+  "name": "imageSmasher",
+  "version": "1.0.99919997",
+  "description": "Image Smasher and Refractonaider",
+  "main": "gulpfile.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "El Feo Gato",
+  "license": "ISC",
+  "devDependencies": {
+    "exif": "^0.6.0",
+    "exiftool": "0.0.3",
+    "gulp": "github:gulpjs/gulp#4.0",
+    "gulp-concat": "^2.6.1",
+    "gulp-data": "^1.3.1",
+    "gulp-debug": "^3.2.0",
+    "gulp-flatmap": "^1.0.2",
+    "gulp-flatten": "^0.4.0",
+    "gulp-gm": "0.0.8",
+    "gulp-image": "^4.3.0",
+    "gulp-rename": "^1.2.3",
+    "gulp-tap": "^1.0.1",
+    "jpeg-exif": "^1.0.6",
+    "lodash": "^4.17.10",
+    "moment": "^2.22.1",
+    "node-exiftool": "^2.3.0",
+    "vinyl-map": "^1.0.2"
+  },
+  "dependencies": {}
+}
