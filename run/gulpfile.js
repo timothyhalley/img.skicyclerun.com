@@ -32,32 +32,42 @@ var fs = require('fs');
 const path = require('path');
 var _ = require('lodash');
 
+const baseDir = '../../../skicyclerun/PhotoLib/';
+const subDirPath = 'albums/**/'
+const imgItems = '*.{heic,jpg,jpeg,gif,png,HEIC,JPG,JPEG,GIF,PNG}';
 
 // Constants & Vars -->
-var filePath = {
-  srcLib: '../../PhotoLib/',
-  //srcFiles: '../../PhotoLib/**/*.{heic,jpg,png}',
-  srcFiles: '../../PhotoLib/**/*.{heic,jpg}',
-  dtLib: '../../PhotoOut/_dated',
-  dtFiles: '../../PhotoOut/_dated/**/*.{heic,jpg,png}',
-  flatten: '../../PhotoOut/_flatten',
-  onedir: '../../PhotoOut/_ondir',
-  szLib: '../../PhotoOut/_sized',
-  szFiles: '../../PhotoOut/_sized/**/*[-sz].{heic,jpg,png}'
-};
+// var filePath = {
+//   srcFiles: '../../../PhotoLib/albums/**/*.{heic,jpg}',
+//   dtLib: '../../PhotoOut/_dated',
+//   dtFiles: '../../PhotoOut/_dated/**/*.{heic,jpg,png}',
+//   flatten: '../../PhotoOut/_flatten',
+//   onedir: '../../PhotoOut/_ondir',
+//   szLib: '../../PhotoOut/_sized',
+//   szFiles: '../../PhotoOut/_sized/**/*[-sz].{heic,jpg,png}'
+// };
 
 gulp.task('start', function(done) {
   done();
 });
 
+gulp.task('copy', function(done) {
+  gulp.src(subDirPath + imgItems, {cwd: baseDir})
+    .pipe(gulp.dest('./_originals/', {cwd: baseDir}))
+
+    .on('end', function() {
+      done();
+    });
+});
+
 gulp.task('rnImages', function(done) {
 
-  gulp.src(['../../PhotoLib/Trashed/**/*.{gif,jpg,JPG,jpeg}'])
+  gulp.src(subDirPath + imgItems, {cwd: baseDir})
 
     .pipe(flatmap(function(stream, file) {
 
       // debug:
-      console.warn('rnImages --> file: ', path.basename(file.path));
+      //console.warn('rnImages --> file: ', path.basename(file.path));
 
       // get Exif Data
       let exifData = jpgexif.parseSync(file.path);
@@ -88,7 +98,7 @@ gulp.task('rnImages', function(done) {
 
     }))
 
-    .pipe(gulp.dest('../../PhotoOut/_rnImages'))
+    .pipe(gulp.dest('./_rnImages/', {cwd: baseDir}))
 
     .on('end', function() {
       console.log('fini rnImages');
@@ -99,15 +109,14 @@ gulp.task('rnImages', function(done) {
 
 gulp.task('exifTool', function(done) {
 
-  var testPath = '../../PhotoOut/UnknownEXIF'
+  vfs.src('./_rnImages/**/00000000_*.{heic,jpg,png}', {cwd: baseDir, sourcemaps: true })
 
-  vfs.src(testPath)
-    //.pipe(map(fileExif))
+    .pipe(debug({
+      title: 'exifTool --> '
+    }))
+
     .pipe(map(simpleEXIF))
-    // .pipe(data(function(file) {
-    //   console.log('Processing --> ' + file.filePath)
-    //   //getMetaData(file);
-    // }))
+
     .on('end', function() {
       done();
     });
@@ -125,15 +134,16 @@ var fileExif = function(file, cb) {
 
 function simpleEXIF(file) {
 
-
   var fs = require('fs');
 
-  console.log('In file = ', file)
-  fs.readFile(file.Path, function(err, data) {
+  console.log('In file = ', file.path)
+  fs.readFile(file.path, function(err, data) {
     if (err)
-      throw err;
+      //throw err;
+      console.error('Err: ', err);
     else {
-      exif.metadata(data, ['-createDate'], function(err, metadata) {
+      console.warn('calling exiftool...')
+      exiftool.metadata(data, ['-createDate', '-modifyDate', '-trackCreateDate', '-trackModifyDate', '-mediaCreateDate', '-mediaModifyDate', '-imageSize'], function(err, metadata) {
         if (err)
           throw err;
         else
@@ -148,14 +158,15 @@ gulp.task('finish', function(done) {
   done();
 });
 
-// Default Task
-gulp.task('default', gulp.series('start', 'exifTool', 'finish', function(done) {
+// ****************************************************************************
+// Default Task ---------------------------------------------------------------
+gulp.task('default', gulp.series('start', 'rnImages', 'finish', function(done) {
 
   // do more stuff
   done();
 
 }));
-
+// ****************************************************************************
 
 // flatten directory structure - use after rn files to create time
 gulp.task('fsOneDir', function(done) {
@@ -528,7 +539,8 @@ function fDateMoment(cDT) {
     const min = 100000;
     const max = 235959;
     var s = Math.floor(Math.random() * (max - min + 1)) + min;
-    chronDT = '20150905_' + s
+    //chronDT = '20150905_' + s
+    chronDT = '00000000_' + s;
 
   } else {
 
