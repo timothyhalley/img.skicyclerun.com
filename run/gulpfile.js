@@ -101,11 +101,41 @@ gulp.task('rnImages', function(done) {
     .pipe(gulp.dest('./_rnImages/', {cwd: baseDir}))
 
     .on('end', function() {
-      console.log('fini rnImages');
       done();
     })
 });
 
+// size images
+// _dated --> _sized
+gulp.task('szImages', function(done) {
+
+  const inputDir = './_rnImages/**/' + imgItems;
+  gulp.src(inputDir, {cwd: baseDir})
+
+    .pipe(gm(function(gmfile, done) {
+
+      gmfile.size(function(err, size) {
+
+        //console.log('Resizing: ', gmfile.source, '\n{', size.width, 'X', size.height, '}', 'to: ');
+        var newValue = calculateAspectRatioFit(size.width, size.height, 1600, 1600)
+        //console.log('{', newValue.width, 'X', newValue.height, '}');
+
+        done(null, gmfile
+          .resize(newValue.width, newValue.height));
+      });
+
+    }))
+    .pipe(rename({
+      suffix: '_' + 'sz'
+    }))
+
+    .pipe(gulp.dest('./_szImages/', {cwd: baseDir}))
+
+    .on('end', function() {
+      done();
+    });
+
+});
 
 gulp.task('exifTool', function(done) {
 
@@ -160,7 +190,7 @@ gulp.task('finish', function(done) {
 
 // ****************************************************************************
 // Default Task ---------------------------------------------------------------
-gulp.task('default', gulp.series('start', 'rnImages', 'finish', function(done) {
+gulp.task('default', gulp.series('start', 'rnImages', 'szImages', 'finish', function(done) {
 
   // do more stuff
   done();
@@ -225,39 +255,6 @@ gulp.task('fsCopy', function(done) {
     }))
 
     .pipe(gulp.dest(filePath.flatten))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-// size images
-// _dated --> _sized
-gulp.task('szImages', function(done) {
-
-  console.log('szImages files: ', filePath.dtFiles);
-
-  gulp.src(filePath.dtFiles)
-
-    .pipe(gm(function(gmfile, done) {
-
-      gmfile.size(function(err, size) {
-
-        //console.log('Resizing: ', gmfile.source, '\n{', size.width, 'X', size.height, '}', 'to: ');
-        var newValue = calculateAspectRatioFit(size.width, size.height, 1200, 1200)
-        //console.log('{', newValue.width, 'X', newValue.height, '}');
-
-        done(null, gmfile
-          .resize(newValue.width, newValue.height));
-      });
-
-    }))
-    .pipe(rename({
-      suffix: '_' + 'sz'
-    }))
-
-    .pipe(gulp.dest(filePath.szLib))
 
     .on('end', function() {
       done();
@@ -333,73 +330,6 @@ gulp.task('fsImages', function(done) {
     .on('end', function() {
       done();
     });
-
-});
-
-// size images
-gulp.task('szMultiImages', function(done) {
-
-  // create an array of image groups (see comments above)
-  // specifying the image size, the ouput dimensions and
-  // whether or not to crop the images
-  var images = [{
-      size: 'lg',
-      width: 1200,
-      crop: false
-    }
-    // {
-    //   size: 'sm',
-    //   width: 500,
-    //   height: 330,
-    //   crop: true
-    // },
-    // {
-    //   size: 'md',
-    //   width: 800,
-    //   height: 500,
-    //   crop: true
-    // }
-  ];
-
-  // loop through image groups
-  images.forEach(function(type) {
-
-    // build the resize object
-    var resize_settings = {
-      width: type.width,
-      crop: type.crop,
-      // never increase image dimensions
-      upscale: false
-    };
-
-    // only specify the height if it exists
-    if (type.hasOwnProperty("height")) {
-      resize_settings.height = type.height
-    };
-
-    gulp.src(files_import)
-
-      .pipe(gm(function(gmfile, done) {
-
-        gmfile.size(function(err, value) {
-          console.log('Image Size: ', value)
-        });
-
-        gmfile.size(function(err, size) {
-          done(null, gmfile
-            .resize(resize_settings.width, resize_settings.height));
-        });
-      }))
-      .pipe(rename({
-        suffix: '_' + type.size
-      }))
-      .pipe(gulp.dest(folder_final))
-
-      .on('end', function() {
-        done();
-      });
-
-  });
 
 });
 

@@ -10,7 +10,7 @@
 #   --exclude '*.DS_Store' \
 #   --delete
 
-aws s3 sync ~/Projects/img.skicyclerun.com/_final s3://img.skicyclerun.com \
+aws s3 sync ~/Projects/SkiCycleRun/PhotoLib/albums s3://img.skicyclerun.com \
   --exclude '*' \
   --exclude '*.DS_Store' \
   --include "*.jpg" \
