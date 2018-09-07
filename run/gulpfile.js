@@ -166,6 +166,35 @@ gulp.task('txImages', function(done) {
 
 });
 
+// test gulp-gm with functions and move towards mashups
+gulp.task('bnImages', function(done) {
+
+  const inputDir = './_szImages/**/' + imgItems;
+  gulp.src(inputDir, {cwd: baseDir})
+
+    .pipe(gm(function(gmfile, done) {
+
+      gmfile.size(function (err, size) {
+        .stroke("blue", 1)
+        .fill("transparent")
+        .drawRectangle(0, 0, 500, 500)
+        .font("Pythagoras")
+        .fontSize(12)
+        .drawText(100, 100, "H O P E  T h i s  W o r k s!")
+    }, {
+      imageMagick: true
+    }))
+
+    .pipe(gulp.dest('./_txImages/', {
+      cwd: baseDir
+    }))
+
+    .on('end', function() {
+      done();
+    });
+
+});
+
 gulp.task('exifTool', function(done) {
 
   vfs.src('./_rnImages/**/00000000_*.{heic,jpg,png}', {cwd: baseDir, sourcemaps: true })
