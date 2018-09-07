@@ -105,8 +105,7 @@ gulp.task('rnImages', function(done) {
     })
 });
 
-// size images
-// _dated --> _sized
+// size images & set quality (97%)
 gulp.task('szImages', function(done) {
 
   const inputDir = './_rnImages/**/' + imgItems;
@@ -121,15 +120,45 @@ gulp.task('szImages', function(done) {
         //console.log('{', newValue.width, 'X', newValue.height, '}');
 
         done(null, gmfile
+          .quality(97)
           .resize(newValue.width, newValue.height));
       });
 
     }))
-    .pipe(rename({
-      suffix: '_' + 'sz'
-    }))
+    // .pipe(rename({
+    //   suffix: '_' + 'sz'
+    // }))
 
     .pipe(gulp.dest('./_szImages/', {cwd: baseDir}))
+
+    .on('end', function() {
+      done();
+    });
+
+});
+
+// size images & set quality (97%)
+gulp.task('txImages', function(done) {
+
+  const inputDir = './_szImages/**/' + imgItems;
+  gulp.src(inputDir, {cwd: baseDir})
+
+    .pipe(gm(function(gmfile) {
+
+      return gmfile
+        .stroke("blue", 1)
+        .fill("transparent")
+        .drawRectangle(0, 0, 500, 500)
+        .font("Pythagoras")
+        .fontSize(12)
+        .drawText(100, 100, "H O P E  T h i s  W o r k s!")
+    }, {
+      imageMagick: true
+    }))
+
+    .pipe(gulp.dest('./_txImages/', {
+      cwd: baseDir
+    }))
 
     .on('end', function() {
       done();
@@ -190,7 +219,7 @@ gulp.task('finish', function(done) {
 
 // ****************************************************************************
 // Default Task ---------------------------------------------------------------
-gulp.task('default', gulp.series('start', 'rnImages', 'szImages', 'finish', function(done) {
+gulp.task('default', gulp.series('start', 'rnImages', 'szImages', 'txImages', 'finish', function(done) {
 
   // do more stuff
   done();
