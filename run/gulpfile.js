@@ -138,7 +138,7 @@ gulp.task('szImages', function(done) {
 });
 
 // size images & set quality (97%)
-gulp.task('txImages', function(done) {
+gulp.task('wmImages', function(done) {
 
   const inputDir = './_szImages/**/' + imgItems;
   gulp.src(inputDir, {cwd: baseDir})
@@ -151,41 +151,13 @@ gulp.task('txImages', function(done) {
         .drawRectangle(0, 0, 500, 500)
         .font("Pythagoras")
         .fontSize(12)
-        .drawText(100, 100, "H O P E  T h i s  W o r k s!")
+        .gravity("SouthWest") //NorthWest|North|NorthEast|West|Center|East|SouthWest|South|SouthEast
+        .drawText(100, 100, "SkiCycleRun ")
     }, {
       imageMagick: true
     }))
 
-    .pipe(gulp.dest('./_txImages/', {
-      cwd: baseDir
-    }))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-// test gulp-gm with functions and move towards mashups
-gulp.task('bnImages', function(done) {
-
-  const inputDir = './_szImages/**/' + imgItems;
-  gulp.src(inputDir, {cwd: baseDir})
-
-    .pipe(gm(function(gmfile, done) {
-
-      gmfile.size(function (err, size) {
-        .stroke("blue", 1)
-        .fill("transparent")
-        .drawRectangle(0, 0, 500, 500)
-        .font("Pythagoras")
-        .fontSize(12)
-        .drawText(100, 100, "H O P E  T h i s  W o r k s!")
-    }, {
-      imageMagick: true
-    }))
-
-    .pipe(gulp.dest('./_txImages/', {
+    .pipe(gulp.dest('./_wmImages/', {
       cwd: baseDir
     }))
 
@@ -248,7 +220,7 @@ gulp.task('finish', function(done) {
 
 // ****************************************************************************
 // Default Task ---------------------------------------------------------------
-gulp.task('default', gulp.series('start', 'rnImages', 'szImages', 'txImages', 'finish', function(done) {
+gulp.task('default', gulp.series('start', 'rnImages', 'szImages', 'wmImages', 'finish', function(done) {
 
   // do more stuff
   done();
