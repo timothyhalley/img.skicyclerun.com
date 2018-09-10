@@ -14,6 +14,7 @@ const exiftool = require('exiftool');
 // basic functions adds
 var debug = require('gulp-debug');
 var rename = require("gulp-rename");
+var sort = require("gulp-sort");
 var tap = require('gulp-tap');
 var flatten = require('gulp-flatten');
 
@@ -146,18 +147,97 @@ gulp.task('wmImages', function(done) {
     .pipe(gm(function(gmfile) {
 
       return gmfile
-        .stroke("blue", 1)
-        .fill("transparent")
-        .drawRectangle(0, 0, 500, 500)
+        // .stroke("blue", 1)
+        // .fill("transparent")
+        // .drawRectangle(0, 0, 500, 500)
+        .font("Ravie")
+        .fill("Gold")
         .font("Pythagoras")
-        .fontSize(12)
+        .pointSize(12)
         .gravity("SouthWest") //NorthWest|North|NorthEast|West|Center|East|SouthWest|South|SouthEast
-        .drawText(100, 100, "SkiCycleRun ")
+        .drawText(100, 100, "© https://skicyclerun.com ©")
     }, {
       imageMagick: true
     }))
 
     .pipe(gulp.dest('./_wmImages/', {
+      cwd: baseDir
+    }))
+
+    .on('end', function() {
+      done();
+    });
+
+});
+
+
+// Charcoal
+// _sized [-sz] --> _sized
+gulp.task('charcoalImages', function(done) {
+
+  const inputDir = './_wmImages/**/' + imgItems;
+  gulp.src(inputDir, {cwd: baseDir})
+
+    .pipe(gm(function(gmfile, done) {
+
+      gmfile.size(function(err, size) {
+        done(null, gmfile
+          .charcoal());
+      });
+
+    }))
+    .pipe(rename({
+      suffix: '_' + 'bw'
+    }))
+
+    .pipe(gulp.dest('./_exImages/', {
+      cwd: baseDir
+    }))
+
+    .on('end', function() {
+      done();
+    });
+
+});
+
+// Sepia
+gulp.task('sepiaImages', function(done) {
+
+  const inputDir = './_wmImages/**/' + imgItems;
+  gulp.src(inputDir, {cwd: baseDir})
+
+    .pipe(gm(function(gmfile, done) {
+
+      gmfile.size(function(err, size) {
+        done(null, gmfile
+          .sepia());
+      });
+
+    }))
+    .pipe(rename({
+      suffix: '_' + 'sp'
+    }))
+    .pipe(gulp.dest('./_exImages/', {
+      cwd: baseDir
+    }))
+
+    .on('end', function() {
+      done();
+    });
+
+});
+
+// Sepia
+gulp.task('numFiles', function(done) {
+
+  const inputDir = ['./_wmImages/**/' + imgItems,
+                    './_exImages/**/' + imgItems];
+  gulp.src(inputDir, {cwd: baseDir})
+
+    .pipe(rename(function (path) {
+      path.basename = fRandomNumber(9999).toString();
+    }))
+    .pipe(gulp.dest('./pub/', {
       cwd: baseDir
     }))
 
@@ -220,7 +300,7 @@ gulp.task('finish', function(done) {
 
 // ****************************************************************************
 // Default Task ---------------------------------------------------------------
-gulp.task('default', gulp.series('start', 'rnImages', 'szImages', 'wmImages', 'finish', function(done) {
+gulp.task('default', gulp.series('start', 'rnImages', 'szImages', 'wmImages', 'charcoalImages', 'sepiaImages', 'numFiles', 'finish', function(done) {
 
   // do more stuff
   done();
@@ -285,59 +365,6 @@ gulp.task('fsCopy', function(done) {
     }))
 
     .pipe(gulp.dest(filePath.flatten))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-// Charcoal
-// _sized [-sz] --> _sized
-gulp.task('charcoalImages', function(done) {
-
-  console.log('charcoalImages szFiles: ', filePath.szFiles);
-
-  gulp.src(filePath.szFiles)
-
-    .pipe(gm(function(gmfile, done) {
-
-      gmfile.size(function(err, size) {
-        done(null, gmfile
-          .charcoal());
-      });
-
-    }))
-    .pipe(rename({
-      suffix: '_' + 'bw'
-    }))
-
-    .pipe(gulp.dest(filePath.szLib))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-// Sepia
-gulp.task('sepiaImages', function(done) {
-
-  console.log('sepiaImages szFiles: ', filePath.szFiles);
-  gulp.src(filePath.szFiles)
-
-    .pipe(gm(function(gmfile, done) {
-
-      gmfile.size(function(err, size) {
-        done(null, gmfile
-          .sepia());
-      });
-
-    }))
-    .pipe(rename({
-      suffix: '_' + 'sp'
-    }))
-    .pipe(gulp.dest(filePath.szLib))
 
     .on('end', function() {
       done();
