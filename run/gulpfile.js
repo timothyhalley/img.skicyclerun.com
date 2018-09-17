@@ -47,10 +47,21 @@ gulp.task('start', function(done) {
 
 gulp.task('asyncTest', function(done) {
 
-  gulp.src(subDirPath + imgItems, {cwd: baseDir})
+  vfs.src(subDirPath + imgItems, {
+      cwd: baseDir
+    })
 
+    .pipe(debug({
+      title: 'File --> '
+    }))
 
+    .pipe(vfs.dest('./_xxImages/', {
+      cwd: baseDir
+    }))
 
+    .on('end', function() {
+      done();
+    });
 });
 
 function asyncFileTask(file) {
