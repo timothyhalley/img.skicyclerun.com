@@ -55,6 +55,8 @@ gulp.task('asyncTest', function(done) {
       title: 'File --> '
     }))
 
+
+
     .pipe(vfs.dest('./_xxImages/', {
       cwd: baseDir
     }))
