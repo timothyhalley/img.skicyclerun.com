@@ -1,16 +1,17 @@
 // require gulp plugins
 var gulp = require('gulp');
+var asyncDone = require('async-done');
 var debug = require('gulp-debug');
 var rename = require("gulp-rename");
 var vfs = require('vinyl-fs');
 var map = require('map-stream');
-var asyncDone = require('async-done');
+
 //var flatmap = require('gulp-flatmap');
 //var vmap = require('vinyl-map');
 
 // photo manipulation and exif
 const jimp = require('gulp-jimp');
-const fastexif = require('fast-exif');
+const exif = require('fast-exif');
 
 // const jpgexif = require("jpeg-exif");
 // const nodeexif = require('node-exiftool');
@@ -58,10 +59,11 @@ gulp.task('asyncTest', function(done) {
     })
 
     .pipe(debug({
-      title: 'File --> '
+      title: 'task file --> '
     }))
 
-    .pipe(map(asyncFileTask))
+    .pipe(map(exifInfo))
+    //.pipe(map(asyncexifInfo))
 
     .pipe(vfs.dest('./_xxImages/', {
       cwd: baseDir
@@ -72,16 +74,31 @@ gulp.task('asyncTest', function(done) {
     });
 });
 
-function asyncFileTask(file, done) {
+function asyncexifInfo(file, done) {
   asyncDone(function(done) {
     // do async things
-    console.log('files:', file.path )
-    done(null, 222);
+    //console.log('files:', file.path )
+    var result = exifInfo(file)
+    done(null, result);
   }, function(error, result) {
     // `error` will be null on successful execution of the first function.
     // `result` will be the result from the first function.
-    console.log('f-done!', result)
+    console.log('exif Info -->\n', result)
     done();
+  });
+}
+
+function exifInfo2(file, done) {
+
+  exif.read(file.path)
+    .then(console.log)
+    .catch(console.error);
+
+}
+
+function exifInfo(file) {
+  return new Promise(resolve => {
+     exif.read(file.path).then(console.log).catch(console.error);
   });
 }
 
