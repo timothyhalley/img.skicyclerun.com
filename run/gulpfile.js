@@ -1,46 +1,52 @@
 // require gulp plugins
 var gulp = require('gulp');
-var flatmap = require('gulp-flatmap');
-var vfs = require('vinyl-fs');
-var vmap = require('vinyl-map');
-var map = require('map-stream');
-var asyncDone = require('async-done');
-
-
-// exif
-const jpgexif = require("jpeg-exif");
-const nodeexif = require('node-exiftool');
-const ep = new nodeexif.ExiftoolProcess();
-const exiftool = require('exiftool');
-const fastexif = require('fast-exif');
-const exif = require('gulp-exif');
-
-// basic functions adds
 var debug = require('gulp-debug');
 var rename = require("gulp-rename");
-var sort = require("gulp-sort");
-var tap = require('gulp-tap');
-var flatten = require('gulp-flatten');
+var vfs = require('vinyl-fs');
+var map = require('map-stream');
+var asyncDone = require('async-done');
+//var flatmap = require('gulp-flatmap');
+//var vmap = require('vinyl-map');
+
+// photo manipulation and exif
+const jimp = require('gulp-jimp');
+const fastexif = require('fast-exif');
+
+// const jpgexif = require("jpeg-exif");
+// const nodeexif = require('node-exiftool');
+// const ep = new nodeexif.ExiftoolProcess();
+// const exiftool = require('exiftool');
+//
+// const exif = require('gulp-exif');
+
+// basic functions adds
+
+//var sort = require("gulp-sort");
+//var tap = require('gulp-tap');
+//var flatten = require('gulp-flatten');
 
 // json file requirements
-var data = require('gulp-data');
-var concat = require('gulp-concat');
+//var data = require('gulp-data');
+//var concat = require('gulp-concat');
 
 // gulp image processing
-var gm = require('gulp-gm');
-const image = require('gulp-image');
+//var gm = require('gulp-gm');
+//const image = require('gulp-image');
 
 // node functions libs
-var moment = require('moment');
-var fs = require('fs');
-
+const fs = require('fs');
 const path = require('path');
-var _ = require('lodash');
+const _ = require('lodash');
+const moment = require('moment');
 
+//
+// PhotoLib locations and item search
 const baseDir = '../../../skicyclerun/PhotoLib/';
 const subDirPath = 'albums/**/'
 const imgItems = '*.{heic,jpg,jpeg,gif,png,HEIC,JPG,JPEG,GIF,PNG}';
 
+// -------------------------------------------------------------------
+// START GULP TASKS
 gulp.task('start', function(done) {
   done();
 });
@@ -55,7 +61,7 @@ gulp.task('asyncTest', function(done) {
       title: 'File --> '
     }))
 
-
+    .pipe(map(asyncFileTask))
 
     .pipe(vfs.dest('./_xxImages/', {
       cwd: baseDir
@@ -66,10 +72,10 @@ gulp.task('asyncTest', function(done) {
     });
 });
 
-function asyncFileTask(file) {
+function asyncFileTask(file, done) {
   asyncDone(function(done) {
     // do async things
-    console.log('files:', )
+    console.log('files:', file.path )
     done(null, 222);
   }, function(error, result) {
     // `error` will be null on successful execution of the first function.
