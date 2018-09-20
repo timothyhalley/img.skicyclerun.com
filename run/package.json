@@ -10,8 +10,10 @@
   "license": "ISC",
   "devDependencies": {
     "fast-exif": "^1.0.1",
+    "flat-map": "^1.0.0",
     "gulp": "^4.0.0",
     "gulp-debug": "^4.0.0",
+    "gulp-flatmap": "^1.0.2",
     "gulp-jimp": "^1.2.9",
     "gulp-rename": "^1.4.0",
     "lodash": "^4.17.10",

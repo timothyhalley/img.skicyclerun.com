@@ -6,7 +6,7 @@ var rename = require("gulp-rename");
 var vfs = require('vinyl-fs');
 var map = require('map-stream');
 
-//var flatmap = require('gulp-flatmap');
+var flatmap = require('gulp-flatmap');
 //var vmap = require('vinyl-map');
 
 // photo manipulation and exif
@@ -58,11 +58,14 @@ gulp.task('asyncTest', function(done) {
       cwd: baseDir
     })
 
-    .pipe(debug({
-      title: 'task file --> '
-    }))
+    // .pipe(debug({
+    //   title: 'task file --> '
+    // }))
 
-    .pipe(map(exifInfo))
+    .pipe(map(function(simple, done) {
+      console.log("help")
+      done();
+    }))
     //.pipe(map(asyncexifInfo))
 
     .pipe(vfs.dest('./_xxImages/', {
@@ -74,32 +77,15 @@ gulp.task('asyncTest', function(done) {
     });
 });
 
-function asyncexifInfo(file, done) {
-  asyncDone(function(done) {
-    // do async things
-    //console.log('files:', file.path )
-    var result = exifInfo(file)
-    done(null, result);
-  }, function(error, result) {
-    // `error` will be null on successful execution of the first function.
-    // `result` will be the result from the first function.
-    console.log('exif Info -->\n', result)
-    done();
-  });
+function simple(file) {
+  console.log(file.path)
+  return file;
 }
 
-function exifInfo2(file, done) {
+function simpleP(file) {
 
-  exif.read(file.path)
-    .then(console.log)
-    .catch(console.error);
+  return new Promise(resolve => exif.read(file).then('data').catch(console.error));
 
-}
-
-function exifInfo(file) {
-  return new Promise(resolve => {
-     exif.read(file.path).then(console.log).catch(console.error);
-  });
 }
 
 gulp.task('copy', function(done) {
