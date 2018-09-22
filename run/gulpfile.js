@@ -62,8 +62,13 @@ gulp.task('asyncTest', function(done) {
       title: 'task file --> '
     }))
 
-    .pipe(map(exifInfo))
-    //.pipe(map(asyncexifInfo))
+    //.pipe(map(exifInfo))
+    .pipe(map(function(imgFile, done) {
+        console.log('path --> ', imgFile.path)
+        asyncCall();
+
+      done();
+    }))
 
     .pipe(vfs.dest('./_xxImages/', {
       cwd: baseDir
@@ -74,32 +79,18 @@ gulp.task('asyncTest', function(done) {
     });
 });
 
-function asyncexifInfo(file, done) {
-  asyncDone(function(done) {
-    // do async things
-    //console.log('files:', file.path )
-    var result = exifInfo(file)
-    done(null, result);
-  }, function(error, result) {
-    // `error` will be null on successful execution of the first function.
-    // `result` will be the result from the first function.
-    console.log('exif Info -->\n', result)
-    done();
-  });
-}
-
-function exifInfo2(file, done) {
-
-  exif.read(file.path)
-    .then(console.log)
-    .catch(console.error);
-
-}
-
-function exifInfo(file) {
+function resolveAfter2Seconds() {
   return new Promise(resolve => {
-     exif.read(file.path).then(console.log).catch(console.error);
+    setTimeout(() => {
+      resolve('resolved');
+    }, 2000);
   });
+}
+async function asyncCall() {
+  console.log('calling');
+  var result = await resolveAfter2Seconds();
+  console.log(result);
+  // expected output: 'resolved'
 }
 
 gulp.task('copy', function(done) {
