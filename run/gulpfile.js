@@ -58,6 +58,7 @@ gulp.task('asyncTest', function(done) {
       cwd: baseDir
     })
 
+<<<<<<< HEAD
     // .pipe(debug({
     //   title: 'task file --> '
     // }))
@@ -68,6 +69,15 @@ gulp.task('asyncTest', function(done) {
     }))
     //.pipe(map(asyncexifInfo))
 
+=======
+    .pipe(map(async function(imgFile, done) {
+      console.log('path --> ', imgFile.path)
+      var result = await getExifInfo(imgFile);
+      console.log('GPS: ', result.gps)
+      done();
+    }))
+
+>>>>>>> d2c32718db683b8565e0378c80284f335b40dd3b
     .pipe(vfs.dest('./_xxImages/', {
       cwd: baseDir
     }))
@@ -77,6 +87,7 @@ gulp.task('asyncTest', function(done) {
     });
 });
 
+<<<<<<< HEAD
 function simple(file) {
   console.log(file.path)
   return file;
@@ -86,6 +97,22 @@ function simpleP(file) {
 
   return new Promise(resolve => exif.read(file).then('data').catch(console.error));
 
+=======
+function getExifInfo(file) {
+  return new Promise(resolve => {
+    exif.read(file.path)
+      .then(resolve)
+      .catch(console.log)
+  });
+}
+
+async function exifInfo(file) {
+  //console.log('calling');
+  var result = await getExifInfo(file);
+  //console.log(result);
+  // expected output: 'resolved'
+  return result;
+>>>>>>> d2c32718db683b8565e0378c80284f335b40dd3b
 }
 
 gulp.task('copy', function(done) {
