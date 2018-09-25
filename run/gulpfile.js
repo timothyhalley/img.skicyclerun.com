@@ -5,13 +5,21 @@ var debug = require('gulp-debug');
 var rename = require("gulp-rename");
 var vfs = require('vinyl-fs');
 var map = require('map-stream');
+var request = require("request");
 
 var flatmap = require('gulp-flatmap');
 //var vmap = require('vinyl-map');
 
 // photo manipulation and exif
 const jimp = require('gulp-jimp');
+const dms2dec = require('dms2dec');
 const exif = require('fast-exif');
+
+const gMapApiKey = 'AIzaSyBwmF17jOrgm-m3NJVlG0Sfs_oesjA1aPQ'
+const gMap = require('@google/maps').createClient({
+  key: gMapApiKey,
+  Promise: Promise
+});
 
 // const jpgexif = require("jpeg-exif");
 // const nodeexif = require('node-exiftool');
@@ -61,7 +69,11 @@ gulp.task('asyncTest', function(done) {
     .pipe(map(async function(imgFile, done) {
       console.log('path --> ', imgFile.path)
       var result = await getExifInfo(imgFile);
-      console.log('GPS: ', result.gps)
+      console.log('GPS: ', result.gps);
+      console.log('GPS:degrees', JSON.stringify(result.gps.GPSLatitude));
+      var gpsLatLon = dms2dec(result.gps.GPSLatitude, result.gps.GPSLatitudeRef, result.gps.GPSLongitude, result.gps.GPSLongitudeRef)
+      console.log('gps LatLog D form: ', gpsLatLon);
+      reverseGeoLookup(gpsLatLon);
       done();
     }))
 
@@ -82,13 +94,32 @@ function getExifInfo(file) {
   });
 }
 
-async function exifInfo(file) {
-  //console.log('calling');
-  var result = await getExifInfo(file);
-  //console.log(result);
-  // expected output: 'resolved'
-  return result;
+async function reverseGeoLookup(gpsLatLon) {
+
+  console.log('gps coords: ', gpsLatLon)
+  var options = {
+    method: 'GET',
+    url: 'https://maps.googleapis.com/maps/api/geocode/json',
+    qs: {
+      latlng: gpsLatLon,
+      key: gMapApiKey
+    },
+  };
+
+  console.log('options ckeck: ', options)
+
+  // request(options, function(error, response, body) {
+  //    if (error) throw new Error(error);
+  //    console.log(body);
+  // });
+
+  // var result = await getExifInfo(file);
+  // //console.log(result);
+  // // expected output: 'resolved'
+  // return result;
 }
+
+
 
 gulp.task('copy', function(done) {
   gulp.src(subDirPath + imgItems, {cwd: baseDir})
