@@ -82,6 +82,8 @@ gulp.task('asyncTest', function(done) {
       // `Latitude: ${geoInfo.results[0].geometry.location.lat} -`,
       // `Longitude: ${geoInfo.results[0].geometry.location.lng}`)
       console.log('File: ', imgFile.path, '\n', geoInfo.results[0].formatted_address)
+      console.log('\nOther Stuff:', geoInfo.results[0].geometry)
+
 
       // wrap task up!
       done(console.log('we are done!'));
