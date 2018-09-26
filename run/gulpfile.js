@@ -1,21 +1,19 @@
 // require gulp plugins
-var gulp = require('gulp');
-var asyncDone = require('async-done');
-var debug = require('gulp-debug');
-var rename = require("gulp-rename");
-var vfs = require('vinyl-fs');
-var map = require('map-stream');
+const gulp = require('gulp');
+const debug = require('gulp-debug');
+const rename = require("gulp-rename");
+const vfs = require('vinyl-fs');
+const map = require('map-stream');
 const r2 = require("r2");
-const request = require("request");
 
-var flatmap = require('gulp-flatmap');
-//var vmap = require('vinyl-map');
+const flatmap = require('gulp-flatmap');
 
 // photo manipulation and exif
 const jimp = require('gulp-jimp');
 const dms2dec = require('dms2dec');
 const exif = require('fast-exif');
 
+// google API
 const gMapApiKey = 'AIzaSyBwmF17jOrgm-m3NJVlG0Sfs_oesjA1aPQ'
 const gMap = require('@google/maps').createClient({
   key: gMapApiKey,
@@ -76,6 +74,7 @@ gulp.task('asyncTest', function(done) {
       var gpsLatLon = await dms2dec(result.gps.GPSLatitude, result.gps.GPSLatitudeRef, result.gps.GPSLongitude, result.gps.GPSLongitudeRef);
 
       // get reverse geocode info:
+      // https://developers.google.com/maps/documentation/geocoding/start
       let latlng = JSON.stringify(gpsLatLon[0]) + ', '+ JSON.stringify(gpsLatLon[1]);
       let url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + latlng + '&key=' + gMapApiKey
       var geoInfo = await reverseGeoLookup(url);
@@ -83,7 +82,6 @@ gulp.task('asyncTest', function(done) {
       // `Latitude: ${geoInfo.results[0].geometry.location.lat} -`,
       // `Longitude: ${geoInfo.results[0].geometry.location.lng}`)
       console.log('File: ', imgFile.path, '\n', geoInfo.results[0].formatted_address)
-
 
       // wrap task up!
       done(console.log('we are done!'));
