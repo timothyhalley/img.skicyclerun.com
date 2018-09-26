@@ -5,7 +5,8 @@ var debug = require('gulp-debug');
 var rename = require("gulp-rename");
 var vfs = require('vinyl-fs');
 var map = require('map-stream');
-var request = require("request");
+const r2 = require("r2");
+const request = require("request");
 
 var flatmap = require('gulp-flatmap');
 //var vmap = require('vinyl-map');
@@ -67,14 +68,25 @@ gulp.task('asyncTest', function(done) {
     })
 
     .pipe(map(async function(imgFile, done) {
-      console.log('path --> ', imgFile.path)
+
+      // get EXIF info
       var result = await getExifInfo(imgFile);
-      console.log('GPS: ', result.gps);
-      console.log('GPS:degrees', JSON.stringify(result.gps.GPSLatitude));
-      var gpsLatLon = dms2dec(result.gps.GPSLatitude, result.gps.GPSLatitudeRef, result.gps.GPSLongitude, result.gps.GPSLongitudeRef)
-      console.log('gps LatLog D form: ', gpsLatLon);
-      reverseGeoLookup(gpsLatLon);
-      done();
+
+      // concert to decimal
+      var gpsLatLon = await dms2dec(result.gps.GPSLatitude, result.gps.GPSLatitudeRef, result.gps.GPSLongitude, result.gps.GPSLongitudeRef);
+
+      // get reverse geocode info:
+      let latlng = JSON.stringify(gpsLatLon[0]) + ', '+ JSON.stringify(gpsLatLon[1]);
+      let url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + latlng + '&key=' + gMapApiKey
+      var geoInfo = await reverseGeoLookup(url);
+      // console.log('geoInfo: ', `City: ${geoInfo.results[0].formatted_address} -`,
+      // `Latitude: ${geoInfo.results[0].geometry.location.lat} -`,
+      // `Longitude: ${geoInfo.results[0].geometry.location.lng}`)
+      console.log('File: ', imgFile.path, '\n', geoInfo.results[0].formatted_address)
+
+
+      // wrap task up!
+      done(console.log('we are done!'));
     }))
 
     .pipe(vfs.dest('./_xxImages/', {
@@ -94,32 +106,16 @@ function getExifInfo(file) {
   });
 }
 
-async function reverseGeoLookup(gpsLatLon) {
+function reverseGeoLookup(url) {
 
-  console.log('gps coords: ', gpsLatLon)
-  var options = {
-    method: 'GET',
-    url: 'https://maps.googleapis.com/maps/api/geocode/json',
-    qs: {
-      latlng: gpsLatLon,
-      key: gMapApiKey
-    },
-  };
+  let obj = {ok: true}
+  return new Promise(resolve => {
+    r2(url).json
+    .then(resolve)
+    .catch(console.log)
+  });
 
-  console.log('options ckeck: ', options)
-
-  // request(options, function(error, response, body) {
-  //    if (error) throw new Error(error);
-  //    console.log(body);
-  // });
-
-  // var result = await getExifInfo(file);
-  // //console.log(result);
-  // // expected output: 'resolved'
-  // return result;
 }
-
-
 
 gulp.task('copy', function(done) {
   gulp.src(subDirPath + imgItems, {cwd: baseDir})

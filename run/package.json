@@ -20,7 +20,8 @@
     "gulp-rename": "^1.4.0",
     "lodash": "^4.17.11",
     "map-stream": "0.0.7",
-    "moment": "^2.22.2"
+    "moment": "^2.22.2",
+    "r2": "^2.0.1"
   },
   "dependencies": {}
 }
