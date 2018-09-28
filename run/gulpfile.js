@@ -1,5 +1,6 @@
 // require gulp plugins
 const gulp = require('gulp');
+const asyncDone = require('async-done');
 const debug = require('gulp-debug');
 const rename = require("gulp-rename");
 const vfs = require('vinyl-fs');
@@ -20,27 +21,6 @@ const gMap = require('@google/maps').createClient({
   Promise: Promise
 });
 
-// const jpgexif = require("jpeg-exif");
-// const nodeexif = require('node-exiftool');
-// const ep = new nodeexif.ExiftoolProcess();
-// const exiftool = require('exiftool');
-//
-// const exif = require('gulp-exif');
-
-// basic functions adds
-
-//var sort = require("gulp-sort");
-//var tap = require('gulp-tap');
-//var flatten = require('gulp-flatten');
-
-// json file requirements
-//var data = require('gulp-data');
-//var concat = require('gulp-concat');
-
-// gulp image processing
-//var gm = require('gulp-gm');
-//const image = require('gulp-image');
-
 // node functions libs
 const fs = require('fs');
 const path = require('path');
@@ -59,36 +39,114 @@ gulp.task('start', function(done) {
   done();
 });
 
+gulp.task('imgSmasher', function(done) {
+
+  vfs.src(subDirPath + imgItems, {
+      cwd: baseDir
+    })
+
+    .pipe(jimp({
+      '-1': {
+            // crop: { x: 100, y: 100, width: 200, height: 200 },
+            // invert: true,
+            // flip: { horizontal: true, vertical: true },
+            // gaussian: 2,
+            // blur: 2,
+            // greyscale: true,
+            sepia: true,
+            opacity: 0.5,
+        },
+        '-2': {
+            autocrop: { tolerance: 0.0002, cropOnlyFrames: false },
+            //resize: { width: 100, height: 100 },
+            scale: 1.2,
+            rotate: 90,
+            brightness: 0.5,
+            contrast: 0.3,
+            type: 'bitmap'
+        },
+        '-3': {
+            posterize: 2,
+            dither565: true,
+            background: '#ff0000',
+            type: 'jpg'
+        }
+    }))
+
+    // write new image to PhotoLib
+    .pipe(vfs.dest('./_xxImages/', {
+      cwd: baseDir
+    }))
+
+  done();
+});
+
+gulp.task('finish', function(done) {
+  done();
+});
+
+var log = function(file, cb) {
+  console.log(file.path);
+  cb(null, file);
+};
+
+// ****************************************************************************
+// Default Task ---------------------------------------------------------------
+gulp.task('default', gulp.series('start', 'imgSmasher', 'finish', function(done) {
+
+  // do more stuff
+  done();
+
+}));
+// ****************************************************************************
+
+
+
 gulp.task('asyncTest', function(done) {
 
   vfs.src(subDirPath + imgItems, {
       cwd: baseDir
     })
 
-    .pipe(map(async function(imgFile, done) {
+    .pipe(map(async function(imgFile, fini) {
+
+      var photoInfo = {
+        file: imgFile.path,
+        location: null
+      }
 
       // get EXIF info
       var result = await getExifInfo(imgFile);
 
-      // concert to decimal
-      var gpsLatLon = await dms2dec(result.gps.GPSLatitude, result.gps.GPSLatitudeRef, result.gps.GPSLongitude, result.gps.GPSLongitudeRef);
+      // convert EXIF gps to decimal
+      if (typeof(result.gps) != 'undefined') {
+        var gpsLatLon = await dms2dec(result.gps.GPSLatitude, result.gps.GPSLatitudeRef, result.gps.GPSLongitude, result.gps.GPSLongitudeRef);
 
-      // get reverse geocode info:
-      // https://developers.google.com/maps/documentation/geocoding/start
-      let latlng = JSON.stringify(gpsLatLon[0]) + ', '+ JSON.stringify(gpsLatLon[1]);
-      let url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + latlng + '&key=' + gMapApiKey
-      var geoInfo = await reverseGeoLookup(url);
-      // console.log('geoInfo: ', `City: ${geoInfo.results[0].formatted_address} -`,
-      // `Latitude: ${geoInfo.results[0].geometry.location.lat} -`,
-      // `Longitude: ${geoInfo.results[0].geometry.location.lng}`)
-      console.log('File: ', imgFile.path, '\n', geoInfo.results[0].formatted_address)
-      console.log('\nOther Stuff:', geoInfo.results[0].geometry)
+        // get reverse geocode info:
+        // https://developers.google.com/maps/documentation/geocoding/start
+        let latlng = JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
+        let url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + latlng + '&key=' + gMapApiKey
+        var geoInfo = await reverseGeoLookup(url);
+        // console.log('geoInfo: ', `City: ${geoInfo.results[0].formatted_address} -`,
+        // `Latitude: ${geoInfo.results[0].geometry.location.lat} -`,
+        // `Longitude: ${geoInfo.results[0].geometry.location.lng}`)
+        //console.log('File: ', imgFile.path, '\n', geoInfo.results[0].formatted_address)
+        photoInfo.location = geoInfo.results[0].formatted_address
+        //console.log('\nOther Stuff:', geoInfo.results[0].geometry)
+      } else {
+        console.warn('NO EXIF --> File: ', imgFile.path);
+        photoInfo.location = 'Unknown Location?'
+      }
+
+      // Create waterMark
 
 
       // wrap task up!
-      done(console.log('we are done!'));
+      fini(console.log('we are done!'));
+
     }))
 
+    // write new image to PhotoLib
     .pipe(vfs.dest('./_xxImages/', {
       cwd: baseDir
     }))
@@ -126,526 +184,512 @@ gulp.task('copy', function(done) {
     });
 });
 
-gulp.task('rnImages', function(done) {
-
-  gulp.src(subDirPath + imgItems, {cwd: baseDir})
-
-    .pipe(flatmap(function(stream, file) {
-
-      // debug:
-      //console.warn('rnImages --> file: ', path.basename(file.path));
-
-      // get Exif Data
-      let exifData = jpgexif.parseSync(file.path);
-      if (exifData === undefined || exifData.SubExif === undefined) {
-        var stats = fs.statSync(file.path);
-        var dtOriginal = stats.createDate;
-        var imageWidthHeight = 'unk_unk';
-      } else {
-        if (exifData.SubExif === undefined) {
-          console.log('Danger Exif: ', exifData, ' for file: ', file.path)
-        }
-        var dtOriginal = exifData.SubExif.DateTimeOriginal;
-      }
-
-      // photos with bad dates
-      var dtNewFileName = fDateMoment(dtOriginal);
-      if (dtNewFileName == 'Invalid date') {
-        dtNewFileName = '00000000_0000' + fRandomNumber(1, 100).toString();
-      }
-
-      return stream
-
-      .pipe(rename({
-        //dirname: '',
-        //suffix: '-' + imageWidthHeight,
-        basename: dtNewFileName
-      }))
-
-    }))
-
-    .pipe(gulp.dest('./_rnImages/', {cwd: baseDir}))
-
-    .on('end', function() {
-      done();
-    })
-});
-
-// size images & set quality (97%)
-gulp.task('szImages', function(done) {
-
-  const inputDir = './_rnImages/**/' + imgItems;
-  gulp.src(inputDir, {cwd: baseDir})
-
-    .pipe(gm(function(gmfile, done) {
-
-      gmfile.size(function(err, size) {
-
-        //console.log('Resizing: ', gmfile.source, '\n{', size.width, 'X', size.height, '}', 'to: ');
-        var newValue = calculateAspectRatioFit(size.width, size.height, 1600, 1600)
-        //console.log('{', newValue.width, 'X', newValue.height, '}');
-
-        done(null, gmfile
-          .quality(97)
-          .resize(newValue.width, newValue.height));
-      });
-
-    }))
-    // .pipe(rename({
-    //   suffix: '_' + 'sz'
-    // }))
-
-    .pipe(gulp.dest('./_szImages/', {cwd: baseDir}))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-// size images & set quality (97%)
-gulp.task('wmImages', function(done) {
-
-  const inputDir = './_szImages/**/' + imgItems;
-  gulp.src(inputDir, {cwd: baseDir})
-
-    .pipe(gm(function(gmfile) {
-
-      return gmfile
-        // .stroke("blue", 1)
-        // .fill("transparent")
-        // .drawRectangle(0, 0, 500, 500)
-        .font("Ravie")
-        .fill("Gold")
-        .font("Pythagoras")
-        .pointSize(12)
-        .gravity("SouthWest") //NorthWest|North|NorthEast|West|Center|East|SouthWest|South|SouthEast
-        .drawText(100, 100, waterMark(gmfile))
-    }, {
-      imageMagick: true
-    }))
-
-    .pipe(gulp.dest('./_wmImages/', {
-      cwd: baseDir
-    }))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-
-// Charcoal
-// _sized [-sz] --> _sized
-gulp.task('charcoalImages', function(done) {
-
-  const inputDir = './_wmImages/**/' + imgItems;
-  gulp.src(inputDir, {cwd: baseDir})
-
-    .pipe(gm(function(gmfile, done) {
-
-      gmfile.size(function(err, size) {
-        done(null, gmfile
-          .charcoal());
-      });
-
-    }))
-    .pipe(rename({
-      suffix: '_' + 'bw'
-    }))
-
-    .pipe(gulp.dest('./_exImages/', {
-      cwd: baseDir
-    }))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-// Sepia
-gulp.task('sepiaImages', function(done) {
-
-  const inputDir = './_wmImages/**/' + imgItems;
-  gulp.src(inputDir, {cwd: baseDir})
-
-    .pipe(gm(function(gmfile, done) {
-
-      gmfile.size(function(err, size) {
-        done(null, gmfile
-          .sepia());
-      });
-
-    }))
-    .pipe(rename({
-      suffix: '_' + 'sp'
-    }))
-    .pipe(gulp.dest('./_exImages/', {
-      cwd: baseDir
-    }))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-// Sepia
-gulp.task('numFiles', function(done) {
-
-  const inputDir = ['./_wmImages/**/' + imgItems,
-                    './_exImages/**/' + imgItems];
-  gulp.src(inputDir, {cwd: baseDir})
-
-    .pipe(rename(function (path) {
-      path.basename = fRandomNumber(1000, 9999).toString();
-    }))
-    .pipe(gulp.dest('./_pub/', {
-      cwd: baseDir
-    }))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-gulp.task('jsonFile', function(done) {
-
-  const inputDir = './_pub/**/' + imgItems;
-  gulp.src(inputDir, {cwd: baseDir})
-
-    .pipe(getExif())
-    // .pipe(debug({
-    //   title: 'File --> '
-    // }))
-
-    .pipe(data(function(file) {
-      var filename = file.filePath.substring(file.filePath.lastIndexOf('/') + 1);
-      var exif = file.exif;
-      var calcLat = gpsDecimal.bind(null, exif.gps.GPSLatitudeRef);
-      var calcLng = gpsDecimal.bind(null, exif.gps.GPSLongitudeRef);
-      var data = {};
-
-      // _.forOwn(exif, function(val, key){
-      //   console.log('Major --> ' + key);
-      // })
-
-      // console.log('CDate --> ' + exif.exif.CreateDate);
-      // console.log('Moment --> ' + moment(exif.exif.CreateDate, 'YYYY:MM:DD HH:mm:ss', true).format('YYYYMMDD_HHmmss'));
-
-      data[filename] = {
-        lat: calcLat.apply(null, exif.gps.GPSLatitude),
-        lng: calcLng.apply(null, exif.gps.GPSLongitude)
-      };
-      file.contents = new Buffer(JSON.stringify(data));
-    }))
-    .pipe(concat('exif.json'))
-    .pipe(gulp.dest('./_pub/', {cwd: baseDir}))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-gulp.task('finish', function(done) {
-  done();
-});
-
-// ****************************************************************************
-// Default Task ---------------------------------------------------------------
-gulp.task('default', gulp.series('start', 'asyncTest', 'finish', function(done) {
-
-  // do more stuff
-  done();
-
-}));
-// ****************************************************************************
-
-// flatten directory structure - use after rn files to create time
-gulp.task('fsOneDir', function(done) {
-
-  gulp.src(filePath.dtFiles)
-
-    .pipe(debug({
-      title: 'OneDir --> '
-    }))
-
-    //.pipe(flatten({includeParents: 1}))
-    .pipe(rename({
-      dirname: ''
-    }))
-    .pipe(gulp.dest(filePath.onedir))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-// flatten directory structure - use after rn files to create time
-gulp.task('fsFlatten', function(done) {
-
-  gulp.src(filePath.dtFiles)
-
-    .pipe(flatten({
-      includeParents: 1
-    }))
-    //.pipe(flatten().on('error', function(error) {
-    //   console.log('FLATTEN ERROR');
-    //   done(error);
-    // }))
-
-    .pipe(debug({
-      title: 'Flat Dir File --> '
-    }))
-
-    .pipe(gulp.dest(filePath.flatten))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-// flatten directory structure - use after rn files to create time
-gulp.task('fsCopy', function(done) {
-
-  //gulp.src(filePath.dtFiles)
-  gulp.src(filePath.dtFiles)
-
-    .pipe(debug({
-      title: 'Copy --> '
-    }))
-
-    .pipe(gulp.dest(filePath.flatten))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-gulp.task('fsImages', function(done) {
-
-  vfs.src(files_redate)
-
-    .pipe(debug({
-      title: 'File --> '
-    }))
-
-    .pipe(exif())
-    .pipe(map(fileInfo))
-    .pipe(vfs.dest(folder_export))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-function getMetaData(file) {
-
-  const exiftool = require('node-exiftool')
-  const ep = new exiftool.ExiftoolProcess()
-
-  ep
-    .open()
-    // display pid
-    .then((pid) => console.log('Started exiftool process %s', pid))
-
-    .then(() => ep.readMetadata(file, ['CreateDate', 'GPSAltitude', 'GPSDateTime']))
-    .then(console.log, console.error)
-
-    .then(() => ep.close())
-    .then(() => console.log('Closed exiftool'))
-    .catch(console.error)
-
-}
-
-gulp.task('jpgCompress', function(done) {
-
-  gulp.src(files_import)
-    .pipe(image({
-      pngquant: false,
-      optipng: false,
-      zopflipng: false,
-      jpegRecompress: true,
-      mozjpeg: false,
-      guetzli: false,
-      gifsicle: false,
-      svgo: false,
-      concurrent: 10,
-      quiet: false // defaults to false
-    }))
-    .pipe(gulp.dest(folder_Compressed))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-gulp.task('countImages', function(done) {
-
-  var getEXIF = map(function(code, filename) {
-
-  })
-
-  vfs.src(files_import)
-    //.pipe(map(fileExif))
-    .pipe(map(simpleEXIF))
-    // .pipe(data(function(file) {
-    //   console.log('Processing --> ' + file.filePath)
-    //   //getMetaData(file);
-    // }))
-    .on('end', function() {
-      done();
-    });
-
-});
-
-gulp.task('exifTool', function(done) {
-
-  vfs.src('./_rnImages/**/00000000_*.{heic,jpg,png}', {cwd: baseDir, sourcemaps: true })
-
-    .pipe(debug({
-      title: 'exifTool --> '
-    }))
-
-    .pipe(map(simpleEXIF))
-
-    .on('end', function() {
-      done();
-    });
-
-});
-
-var fileExif = function(file, cb) {
-
-  console.log('File input info --> ', file.filePath)
-  getMetaData(file.filePath);
-
-  cb(null, file);
-
-};
-
-function simpleEXIF(file) {
-
-  var fs = require('fs');
-
-  console.log('In file = ', file)
-  fs.readFile(file, function(err, data) {
-    if (err)
-      //throw err;
-      console.error('Err: ', err);
-    else {
-      console.warn('calling exiftool...')
-      exiftool.metadata(data, ['-createDate', '-modifyDate', '-trackCreateDate', '-trackModifyDate', '-mediaCreateDate', '-mediaModifyDate', '-imageSize'], function(err, metadata) {
-        if (err)
-          throw err;
-        else
-          console.log('Look what I found: ', data);
-      });
-    }
-  });
-
-}
-
+// gulp.task('rnImages', function(done) {
 //
-// Helper Functions - global to all tasks
+//   gulp.src(subDirPath + imgItems, {cwd: baseDir})
 //
-function calculateAspectRatioFit(srcWidth, srcHeight, maxWidth, maxHeight) {
-
-  var ratio = [maxWidth / srcWidth, maxHeight / srcHeight];
-  ratio = Math.min(ratio[0], ratio[1]);
-  if (ratio > 1) {
-    ratio = 1
-  };
-
-  var newHigth = Math.floor(srcHeight * ratio);
-  var newWidth = Math.floor(srcWidth * ratio);
-
-  return {
-    width: newWidth,
-    height: newHigth
-  };
-}
-
-function gpsDecimal(direction, degrees, minutes, seconds) {
-  var d = degrees + minutes / 60 + seconds / (60 * 60);
-  // console.log('gpsDec = ' + d)
-  return (direction === 'S' || direction === 'W') ? d *= -1 : d;
-}
-
+//     .pipe(flatmap(function(stream, file) {
 //
-// deal with the possiblity of no CDATE and provide a base date alternatively
+//       // debug:
+//       //console.warn('rnImages --> file: ', path.basename(file.path));
 //
-function fDateMoment(cDT) {
-
-  var chronDT;
-
-  if (!moment(cDT, 'YYYY:MM:DD HH:mm:ss').isValid()) {
-
-    const min = 100000;
-    const max = 235959;
-    var s = Math.floor(Math.random() * (max - min + 1)) + min;
-    //chronDT = '20150905_' + s
-    chronDT = '00000000_' + s;
-
-  } else {
-
-    chronDT = moment(cDT, 'YYYY:MM:DD HH:mm:ss', true).format('YYYYMMDD_HHmmss')
-
-  }
-
-  return chronDT
-
-}
-
-function fRandomNumber(min, max) {
-
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min)) + min;
-
-}
-
-var fileInfo = function(file, cb) {
-
-  if (file.exif === undefined) {
-    var exifDate = simpleEXIF(file)
-  } else {
-    var exifDate = file.exif.exif.CreateDate;
-  }
-  //var newDate = moment(exifDate).toDate();
-  if (exifDate === undefined) {
-    //console.log(file.filePath + '\n exif info is --> ', Object.keys(file.exif.image), ' - ', Object.values(file.exif.image));
-  } else {
-    var newDate = moment(exifDate, 'YYYY:MM:DD HH:mm:ss').toDate();
-    fs.utimesSync(file.filePath, newDate, newDate);
-    //console.log(file.filePath, '\n EXIF Cdate --> ', newDate, ' -- ', file.exif)
-  };
-
-  cb(null, file);
-
-};
-
-function waterMark(file){
-
-  var photoDate = null;
-  fastexif.read(file.source)
-    .then((data) => {
-      //console.log('Dates: ', data.exif.DateTimeOriginal)
-      photoDate = fDateMoment(data.exif.DateTimeOriginal);
-    })
-    .catch(console.error);
-
-  return "© https://skicyclerun.com © " + photoDate;
-}
+//       // get Exif Data
+//       let exifData = jpgexif.parseSync(file.path);
+//       if (exifData === undefined || exifData.SubExif === undefined) {
+//         var stats = fs.statSync(file.path);
+//         var dtOriginal = stats.createDate;
+//         var imageWidthHeight = 'unk_unk';
+//       } else {
+//         if (exifData.SubExif === undefined) {
+//           console.log('Danger Exif: ', exifData, ' for file: ', file.path)
+//         }
+//         var dtOriginal = exifData.SubExif.DateTimeOriginal;
+//       }
+//
+//       // photos with bad dates
+//       var dtNewFileName = fDateMoment(dtOriginal);
+//       if (dtNewFileName == 'Invalid date') {
+//         dtNewFileName = '00000000_0000' + fRandomNumber(1, 100).toString();
+//       }
+//
+//       return stream
+//
+//       .pipe(rename({
+//         //dirname: '',
+//         //suffix: '-' + imageWidthHeight,
+//         basename: dtNewFileName
+//       }))
+//
+//     }))
+//
+//     .pipe(gulp.dest('./_rnImages/', {cwd: baseDir}))
+//
+//     .on('end', function() {
+//       done();
+//     })
+// });
+//
+// // size images & set quality (97%)
+// gulp.task('szImages', function(done) {
+//
+//   const inputDir = './_rnImages/**/' + imgItems;
+//   gulp.src(inputDir, {cwd: baseDir})
+//
+//     .pipe(gm(function(gmfile, done) {
+//
+//       gmfile.size(function(err, size) {
+//
+//         //console.log('Resizing: ', gmfile.source, '\n{', size.width, 'X', size.height, '}', 'to: ');
+//         var newValue = calculateAspectRatioFit(size.width, size.height, 1600, 1600)
+//         //console.log('{', newValue.width, 'X', newValue.height, '}');
+//
+//         done(null, gmfile
+//           .quality(97)
+//           .resize(newValue.width, newValue.height));
+//       });
+//
+//     }))
+//     // .pipe(rename({
+//     //   suffix: '_' + 'sz'
+//     // }))
+//
+//     .pipe(gulp.dest('./_szImages/', {cwd: baseDir}))
+//
+//     .on('end', function() {
+//       done();
+//     });
+//
+// });
+//
+// // size images & set quality (97%)
+// gulp.task('wmImages', function(done) {
+//
+//   const inputDir = './_szImages/**/' + imgItems;
+//   gulp.src(inputDir, {cwd: baseDir})
+//
+//     .pipe(gm(function(gmfile) {
+//
+//       return gmfile
+//         // .stroke("blue", 1)
+//         // .fill("transparent")
+//         // .drawRectangle(0, 0, 500, 500)
+//         .font("Ravie")
+//         .fill("Gold")
+//         .font("Pythagoras")
+//         .pointSize(12)
+//         .gravity("SouthWest") //NorthWest|North|NorthEast|West|Center|East|SouthWest|South|SouthEast
+//         .drawText(100, 100, waterMark(gmfile))
+//     }, {
+//       imageMagick: true
+//     }))
+//
+//     .pipe(gulp.dest('./_wmImages/', {
+//       cwd: baseDir
+//     }))
+//
+//     .on('end', function() {
+//       done();
+//     });
+//
+// });
+//
+//
+// // Charcoal
+// // _sized [-sz] --> _sized
+// gulp.task('charcoalImages', function(done) {
+//
+//   const inputDir = './_wmImages/**/' + imgItems;
+//   gulp.src(inputDir, {cwd: baseDir})
+//
+//     .pipe(gm(function(gmfile, done) {
+//
+//       gmfile.size(function(err, size) {
+//         done(null, gmfile
+//           .charcoal());
+//       });
+//
+//     }))
+//     .pipe(rename({
+//       suffix: '_' + 'bw'
+//     }))
+//
+//     .pipe(gulp.dest('./_exImages/', {
+//       cwd: baseDir
+//     }))
+//
+//     .on('end', function() {
+//       done();
+//     });
+//
+// });
+//
+// // Sepia
+// gulp.task('sepiaImages', function(done) {
+//
+//   const inputDir = './_wmImages/**/' + imgItems;
+//   gulp.src(inputDir, {cwd: baseDir})
+//
+//     .pipe(gm(function(gmfile, done) {
+//
+//       gmfile.size(function(err, size) {
+//         done(null, gmfile
+//           .sepia());
+//       });
+//
+//     }))
+//     .pipe(rename({
+//       suffix: '_' + 'sp'
+//     }))
+//     .pipe(gulp.dest('./_exImages/', {
+//       cwd: baseDir
+//     }))
+//
+//     .on('end', function() {
+//       done();
+//     });
+//
+// });
+//
+// // Sepia
+// gulp.task('numFiles', function(done) {
+//
+//   const inputDir = ['./_wmImages/**/' + imgItems,
+//                     './_exImages/**/' + imgItems];
+//   gulp.src(inputDir, {cwd: baseDir})
+//
+//     .pipe(rename(function (path) {
+//       path.basename = fRandomNumber(1000, 9999).toString();
+//     }))
+//     .pipe(gulp.dest('./_pub/', {
+//       cwd: baseDir
+//     }))
+//
+//     .on('end', function() {
+//       done();
+//     });
+//
+// });
+//
+// gulp.task('jsonFile', function(done) {
+//
+//   const inputDir = './_pub/**/' + imgItems;
+//   gulp.src(inputDir, {cwd: baseDir})
+//
+//     .pipe(getExif())
+//     // .pipe(debug({
+//     //   title: 'File --> '
+//     // }))
+//
+//     .pipe(data(function(file) {
+//       var filename = file.filePath.substring(file.filePath.lastIndexOf('/') + 1);
+//       var exif = file.exif;
+//       var calcLat = gpsDecimal.bind(null, exif.gps.GPSLatitudeRef);
+//       var calcLng = gpsDecimal.bind(null, exif.gps.GPSLongitudeRef);
+//       var data = {};
+//
+//       // _.forOwn(exif, function(val, key){
+//       //   console.log('Major --> ' + key);
+//       // })
+//
+//       // console.log('CDate --> ' + exif.exif.CreateDate);
+//       // console.log('Moment --> ' + moment(exif.exif.CreateDate, 'YYYY:MM:DD HH:mm:ss', true).format('YYYYMMDD_HHmmss'));
+//
+//       data[filename] = {
+//         lat: calcLat.apply(null, exif.gps.GPSLatitude),
+//         lng: calcLng.apply(null, exif.gps.GPSLongitude)
+//       };
+//       file.contents = new Buffer(JSON.stringify(data));
+//     }))
+//     .pipe(concat('exif.json'))
+//     .pipe(gulp.dest('./_pub/', {cwd: baseDir}))
+//
+//     .on('end', function() {
+//       done();
+//     });
+//
+// });
+//
+// // flatten directory structure - use after rn files to create time
+// gulp.task('fsOneDir', function(done) {
+//
+//   gulp.src(filePath.dtFiles)
+//
+//     .pipe(debug({
+//       title: 'OneDir --> '
+//     }))
+//
+//     //.pipe(flatten({includeParents: 1}))
+//     .pipe(rename({
+//       dirname: ''
+//     }))
+//     .pipe(gulp.dest(filePath.onedir))
+//
+//     .on('end', function() {
+//       done();
+//     });
+//
+// });
+//
+// // flatten directory structure - use after rn files to create time
+// gulp.task('fsFlatten', function(done) {
+//
+//   gulp.src(filePath.dtFiles)
+//
+//     .pipe(flatten({
+//       includeParents: 1
+//     }))
+//     //.pipe(flatten().on('error', function(error) {
+//     //   console.log('FLATTEN ERROR');
+//     //   done(error);
+//     // }))
+//
+//     .pipe(debug({
+//       title: 'Flat Dir File --> '
+//     }))
+//
+//     .pipe(gulp.dest(filePath.flatten))
+//
+//     .on('end', function() {
+//       done();
+//     });
+//
+// });
+//
+// // flatten directory structure - use after rn files to create time
+// gulp.task('fsCopy', function(done) {
+//
+//   //gulp.src(filePath.dtFiles)
+//   gulp.src(filePath.dtFiles)
+//
+//     .pipe(debug({
+//       title: 'Copy --> '
+//     }))
+//
+//     .pipe(gulp.dest(filePath.flatten))
+//
+//     .on('end', function() {
+//       done();
+//     });
+//
+// });
+//
+// gulp.task('fsImages', function(done) {
+//
+//   vfs.src(files_redate)
+//
+//     .pipe(debug({
+//       title: 'File --> '
+//     }))
+//
+//     .pipe(exif())
+//     .pipe(map(fileInfo))
+//     .pipe(vfs.dest(folder_export))
+//
+//     .on('end', function() {
+//       done();
+//     });
+//
+// });
+//
+// function getMetaData(file) {
+//
+//   const exiftool = require('node-exiftool')
+//   const ep = new exiftool.ExiftoolProcess()
+//
+//   ep
+//     .open()
+//     // display pid
+//     .then((pid) => console.log('Started exiftool process %s', pid))
+//
+//     .then(() => ep.readMetadata(file, ['CreateDate', 'GPSAltitude', 'GPSDateTime']))
+//     .then(console.log, console.error)
+//
+//     .then(() => ep.close())
+//     .then(() => console.log('Closed exiftool'))
+//     .catch(console.error)
+//
+// }
+//
+// gulp.task('jpgCompress', function(done) {
+//
+//   gulp.src(files_import)
+//     .pipe(image({
+//       pngquant: false,
+//       optipng: false,
+//       zopflipng: false,
+//       jpegRecompress: true,
+//       mozjpeg: false,
+//       guetzli: false,
+//       gifsicle: false,
+//       svgo: false,
+//       concurrent: 10,
+//       quiet: false // defaults to false
+//     }))
+//     .pipe(gulp.dest(folder_Compressed))
+//
+//     .on('end', function() {
+//       done();
+//     });
+//
+// });
+//
+// gulp.task('countImages', function(done) {
+//
+//   var getEXIF = map(function(code, filename) {
+//
+//   })
+//
+//   vfs.src(files_import)
+//     //.pipe(map(fileExif))
+//     .pipe(map(simpleEXIF))
+//     // .pipe(data(function(file) {
+//     //   console.log('Processing --> ' + file.filePath)
+//     //   //getMetaData(file);
+//     // }))
+//     .on('end', function() {
+//       done();
+//     });
+//
+// });
+//
+// gulp.task('exifTool', function(done) {
+//
+//   vfs.src('./_rnImages/**/00000000_*.{heic,jpg,png}', {cwd: baseDir, sourcemaps: true })
+//
+//     .pipe(debug({
+//       title: 'exifTool --> '
+//     }))
+//
+//     .pipe(map(simpleEXIF))
+//
+//     .on('end', function() {
+//       done();
+//     });
+//
+// });
+//
+// var fileExif = function(file, cb) {
+//
+//   console.log('File input info --> ', file.filePath)
+//   getMetaData(file.filePath);
+//
+//   cb(null, file);
+//
+// };
+//
+// function simpleEXIF(file) {
+//
+//   var fs = require('fs');
+//
+//   console.log('In file = ', file)
+//   fs.readFile(file, function(err, data) {
+//     if (err)
+//       //throw err;
+//       console.error('Err: ', err);
+//     else {
+//       console.warn('calling exiftool...')
+//       exiftool.metadata(data, ['-createDate', '-modifyDate', '-trackCreateDate', '-trackModifyDate', '-mediaCreateDate', '-mediaModifyDate', '-imageSize'], function(err, metadata) {
+//         if (err)
+//           throw err;
+//         else
+//           console.log('Look what I found: ', data);
+//       });
+//     }
+//   });
+//
+// }
+//
+// //
+// // Helper Functions - global to all tasks
+// //
+// function calculateAspectRatioFit(srcWidth, srcHeight, maxWidth, maxHeight) {
+//
+//   var ratio = [maxWidth / srcWidth, maxHeight / srcHeight];
+//   ratio = Math.min(ratio[0], ratio[1]);
+//   if (ratio > 1) {
+//     ratio = 1
+//   };
+//
+//   var newHigth = Math.floor(srcHeight * ratio);
+//   var newWidth = Math.floor(srcWidth * ratio);
+//
+//   return {
+//     width: newWidth,
+//     height: newHigth
+//   };
+// }
+//
+// function gpsDecimal(direction, degrees, minutes, seconds) {
+//   var d = degrees + minutes / 60 + seconds / (60 * 60);
+//   // console.log('gpsDec = ' + d)
+//   return (direction === 'S' || direction === 'W') ? d *= -1 : d;
+// }
+//
+// //
+// // deal with the possiblity of no CDATE and provide a base date alternatively
+// //
+// function fDateMoment(cDT) {
+//
+//   var chronDT;
+//
+//   if (!moment(cDT, 'YYYY:MM:DD HH:mm:ss').isValid()) {
+//
+//     const min = 100000;
+//     const max = 235959;
+//     var s = Math.floor(Math.random() * (max - min + 1)) + min;
+//     //chronDT = '20150905_' + s
+//     chronDT = '00000000_' + s;
+//
+//   } else {
+//
+//     chronDT = moment(cDT, 'YYYY:MM:DD HH:mm:ss', true).format('YYYYMMDD_HHmmss')
+//
+//   }
+//
+//   return chronDT
+//
+// }
+//
+// function fRandomNumber(min, max) {
+//
+//   min = Math.ceil(min);
+//   max = Math.floor(max);
+//   return Math.floor(Math.random() * (max - min)) + min;
+//
+// }
+//
+// var fileInfo = function(file, cb) {
+//
+//   if (file.exif === undefined) {
+//     var exifDate = simpleEXIF(file)
+//   } else {
+//     var exifDate = file.exif.exif.CreateDate;
+//   }
+//   //var newDate = moment(exifDate).toDate();
+//   if (exifDate === undefined) {
+//     //console.log(file.filePath + '\n exif info is --> ', Object.keys(file.exif.image), ' - ', Object.values(file.exif.image));
+//   } else {
+//     var newDate = moment(exifDate, 'YYYY:MM:DD HH:mm:ss').toDate();
+//     fs.utimesSync(file.filePath, newDate, newDate);
+//     //console.log(file.filePath, '\n EXIF Cdate --> ', newDate, ' -- ', file.exif)
+//   };
+//
+//   cb(null, file);
+//
+// };
+//
+// function waterMark(file){
+//
+//   var photoDate = null;
+//   fastexif.read(file.source)
+//     .then((data) => {
+//       //console.log('Dates: ', data.exif.DateTimeOriginal)
+//       photoDate = fDateMoment(data.exif.DateTimeOriginal);
+//     })
+//     .catch(console.error);
+//
+//   return "© https://skicyclerun.com © " + photoDate;
+// }
 
 // // WEBP Convert - final
 // gulp.task('webpImages', function(done) {
