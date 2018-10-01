@@ -14,6 +14,7 @@ const imagemin = require('gulp-imagemin');
 const imageminMozjpeg = require('imagemin-mozjpeg');
 const dms2dec = require('dms2dec');
 const exif = require('fast-exif');
+const jpgexif = require("jpeg-exif");
 
 // google API
 const gMapApiKey = 'AIzaSyBwmF17jOrgm-m3NJVlG0Sfs_oesjA1aPQ'
@@ -40,17 +41,73 @@ const imgItems = '*.{heic,jpg,jpeg,gif,png,HEIC,JPG,JPEG,GIF,PNG}';
 gulp.task('start', function(done) {
 
   // console.log('wth:', baseDir + subDirPath + imgItems)
-  vfs.src(subDirPath + imgItems, {
-      cwd: baseDir
-    })
-    .pipe(debug({title: 'Start Task:'}))
+  // vfs.src(subDirPath + imgItems, {
+  //     cwd: baseDir
+  //   })
+  //   .pipe(debug({title: 'Start Task:'}))
 
   done();
 });
 
-gulp.task('szImages', function(done) {
+gulp.task('rnImages', function(done) {
 
   const inputDir = subDirPath + imgItems;
+  let cronName = null;
+  console.log('rnInput --> ', inputDir);
+  vfs.src(inputDir, {
+      cwd: baseDir
+    })
+
+    .pipe(map(function(file, done) {
+
+      let exifData = jpgexif.parseSync(file.path);
+
+      if (exifData === undefined || exifData.SubExif === undefined) {
+        var stats = fs.statSync(file.path);
+        var dtOriginal = stats.createDate;
+        var imageWidthHeight = 'unk_unk';
+      } else {
+        if (exifData.SubExif === undefined) {
+          console.log('Danger Exif: ', exifData, ' for file: ', file.path)
+        }
+        var dtOriginal = exifData.SubExif.DateTimeOriginal;
+      }
+      // photos with bad dates
+      var dtNewFileName = fDateMoment(dtOriginal);
+      if (dtNewFileName == 'Invalid date') {
+        dtNewFileName = '00000000_0000' + fRandomNumber(1, 100).toString();
+      }
+      cronName = dtNewFileName;
+      console.log('new name -> ', cronName)
+      done(null, file);
+
+    }))
+
+    .pipe(rename({
+      //dirname: '',
+      //suffix: '-' + imageWidthHeight,
+      basename: cronName
+    }))
+
+    .pipe(vfs.dest('./_rnImages/', {
+      cwd: baseDir
+    }))
+    .on('end', function() {
+      done();
+    })
+});
+
+function resolveNewName(file) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve('resolved');
+    }, 2000);
+  });
+}
+
+gulp.task('szImages', function(done) {
+
+  const inputDir = './_rnImages/**/' + imgItems;
   console.log('szInput --> ', inputDir);
   vfs.src(inputDir, {
       cwd: baseDir
@@ -113,18 +170,7 @@ gulp.task('imgSmasher', function(done) {
       cwd: baseDir
     })
 
-    // .pipe(map(function(file, done) {
-    //   //transform data
-    //   console.log('imgSmasher: file --> ', file.path)
-    //   (async () => {var results = await exifTask(file)
-    //     //console.log('trapped: ', results)
-    //     return results
-    //   })()
-    //   done(null, file)
-    // }))
-    .pipe(map(log))
-
-    //log.then(v => {console.log(v)})
+    .pipe(map(log2))
 
     // write new image to PhotoLib
     .pipe(vfs.dest('./_xxImages/', {
@@ -137,21 +183,19 @@ gulp.task('imgSmasher', function(done) {
 
 });
 
-
 gulp.task('finish', function(done) {
-  vfs.src(subDirPath + imgItems, {
-      cwd: baseDir
-    })
+  // vfs.src(subDirPath + imgItems, {
+  //     cwd: baseDir
+  //   })
 
-    .pipe(debug({title: 'Finished Task: \n'}))
-
+    //.pipe(debug({title: 'Finished Task: \n'}))
 
   done();
 });
 
 // ****************************************************************************
 // Default Task ---------------------------------------------------------------
-gulp.task('default', gulp.series('start', 'szImages', 'mzImages', 'imgSmasher', 'finish', function(done) {
+gulp.task('default', gulp.series('start', 'rnImages', 'szImages', 'mzImages', 'imgSmasher', 'finish', function(done) {
 
   console.log('Default:')
   done();
@@ -191,9 +235,35 @@ function reverseGeoLookup(url) {
 
 }
 
+//
+// deal with the possiblity of no CDATE and provide a base date alternatively
+//
+function fDateMoment(cDT) {
+
+  var chronDT;
+
+  if (!moment(cDT, 'YYYY:MM:DD HH:mm:ss').isValid()) {
+
+    const min = 100000;
+    const max = 235959;
+    var s = Math.floor(Math.random() * (max - min + 1)) + min;
+    //chronDT = '20150905_' + s
+    chronDT = '00000000_' + s;
+
+  } else {
+
+    chronDT = moment(cDT, 'YYYY:MM:DD HH:mm:ss', true).format('YYYYMMDD_HHmmss')
+
+  }
+
+  return chronDT
+
+}
+
+
 // ****************************************************************************
 // Async Keys Tools -----------------------------------------------------------
-var log = function(file, cb) {
+const log = function(file, cb) {
   console.log('get EXIF:', file.path);
   (async () => {var results = await exifTask(file)
     console.log('trapped: ', results)
@@ -205,7 +275,7 @@ var log = function(file, cb) {
 const log2 = async(file, cb) => {
   const imgWM = await exifTask(file);
   //const getImgAdd = await askImgAdd();
-  console.log('How did this work: ', imgWM)
+  console.log('How did this work: ', file.path, ' ', imgWM)
   cb(null, file);
 }
 
@@ -379,51 +449,6 @@ gulp.task('copy', function(done) {
 //
 // });
 
-// gulp.task('rnImages', function(done) {
-//
-//   gulp.src(subDirPath + imgItems, {cwd: baseDir})
-//
-//     .pipe(map(function(stream, file) {
-//
-//       // debug:
-//       //console.warn('rnImages --> file: ', path.basename(file.path));
-//
-//       // get Exif Data
-//       let exifData = jpgexif.parseSync(file.path);
-//       if (exifData === undefined || exifData.SubExif === undefined) {
-//         var stats = fs.statSync(file.path);
-//         var dtOriginal = stats.createDate;
-//         var imageWidthHeight = 'unk_unk';
-//       } else {
-//         if (exifData.SubExif === undefined) {
-//           console.log('Danger Exif: ', exifData, ' for file: ', file.path)
-//         }
-//         var dtOriginal = exifData.SubExif.DateTimeOriginal;
-//       }
-//
-//       // photos with bad dates
-//       var dtNewFileName = fDateMoment(dtOriginal);
-//       if (dtNewFileName == 'Invalid date') {
-//         dtNewFileName = '00000000_0000' + fRandomNumber(1, 100).toString();
-//       }
-//
-//       return stream
-//
-//       .pipe(rename({
-//         //dirname: '',
-//         //suffix: '-' + imageWidthHeight,
-//         basename: dtNewFileName
-//       }))
-//
-//     }))
-//
-//     .pipe(gulp.dest('./_rnImages/', {cwd: baseDir}))
-//
-//     .on('end', function() {
-//       done();
-//     })
-// });
-//
 
 //
 // // size images & set quality (97%)
@@ -775,31 +800,7 @@ gulp.task('charcoalImages', function(done) {
 //   return (direction === 'S' || direction === 'W') ? d *= -1 : d;
 // }
 //
-// //
-// // deal with the possiblity of no CDATE and provide a base date alternatively
-// //
-// function fDateMoment(cDT) {
-//
-//   var chronDT;
-//
-//   if (!moment(cDT, 'YYYY:MM:DD HH:mm:ss').isValid()) {
-//
-//     const min = 100000;
-//     const max = 235959;
-//     var s = Math.floor(Math.random() * (max - min + 1)) + min;
-//     //chronDT = '20150905_' + s
-//     chronDT = '00000000_' + s;
-//
-//   } else {
-//
-//     chronDT = moment(cDT, 'YYYY:MM:DD HH:mm:ss', true).format('YYYYMMDD_HHmmss')
-//
-//   }
-//
-//   return chronDT
-//
-// }
-//
+
 // function fRandomNumber(min, max) {
 //
 //   min = Math.ceil(min);
