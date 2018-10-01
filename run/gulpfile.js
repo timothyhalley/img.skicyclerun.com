@@ -1,21 +1,23 @@
 // require gulp plugins
 const gulp = require('gulp');
-const asyncDone = require('async-done');
 const debug = require('gulp-debug');
 const rename = require("gulp-rename");
 const vfs = require('vinyl-fs');
 const map = require('map-stream');
 const r2 = require("r2");
 
-const flatmap = require('gulp-flatmap');
 
 // photo manipulation and exif
-const jimp = require('gulp-jimp');
+const sharp = require('sharp');
+const gm = require('gulp-gm');
+const imagemin = require('gulp-imagemin');
+const imageminMozjpeg = require('imagemin-mozjpeg');
 const dms2dec = require('dms2dec');
 const exif = require('fast-exif');
 
 // google API
 const gMapApiKey = 'AIzaSyBwmF17jOrgm-m3NJVlG0Sfs_oesjA1aPQ'
+const gMapURL = 'https://maps.googleapis.com/maps/api/geocode/json?latlng='
 const gMap = require('@google/maps').createClient({
   key: gMapApiKey,
   Promise: Promise
@@ -36,70 +38,243 @@ const imgItems = '*.{heic,jpg,jpeg,gif,png,HEIC,JPG,JPEG,GIF,PNG}';
 // -------------------------------------------------------------------
 // START GULP TASKS
 gulp.task('start', function(done) {
+
+  // console.log('wth:', baseDir + subDirPath + imgItems)
+  vfs.src(subDirPath + imgItems, {
+      cwd: baseDir
+    })
+    .pipe(debug({title: 'Start Task:'}))
+
   done();
+});
+
+gulp.task('szImages', function(done) {
+
+  const inputDir = subDirPath + imgItems;
+  console.log('szInput --> ', inputDir);
+  vfs.src(inputDir, {
+      cwd: baseDir
+    })
+
+    .pipe(gm(function(gmfile, done) {
+
+      gmfile.size(function(err, size) {
+
+        //console.log('Resizing: ', gmfile.source, '\n{', size.width, 'X', size.height, '}', 'to: ');
+        var newValue = calculateAspectRatioFit(size.width, size.height, 1600, 1600)
+        //console.log('{', newValue.width, 'X', newValue.height, '}');
+
+        done(null, gmfile
+          .quality(100)
+          .resize(newValue.width, newValue.height));
+      });
+
+    }))
+
+    // write new image to PhotoLib
+    .pipe(vfs.dest('./_szImages/', {
+      cwd: baseDir
+    }))
+
+    .on('end', function() {
+      done();
+    });
+
+});
+
+gulp.task('mzImages', function(done) {
+
+  const inputDir = './_szImages/' + imgItems;
+  console.log('mzInput --> ', inputDir);
+  vfs.src(inputDir, {
+      cwd: baseDir
+    })
+
+    .pipe(imagemin([imageminMozjpeg({
+      quality: 95
+    })]))
+
+    // write new image to PhotoLib
+    .pipe(vfs.dest('./_mzImages/', {
+      cwd: baseDir
+    }))
+
+    .on('end', function() {
+      done();
+    });
+
 });
 
 gulp.task('imgSmasher', function(done) {
 
-  vfs.src(subDirPath + imgItems, {
+  const inputDir = './_rnImages/**/' + imgItems;
+  vfs.src(inputDir, {
       cwd: baseDir
     })
 
-    .pipe(jimp({
-      '-1': {
-            // crop: { x: 100, y: 100, width: 200, height: 200 },
-            // invert: true,
-            // flip: { horizontal: true, vertical: true },
-            // gaussian: 2,
-            // blur: 2,
-            // greyscale: true,
-            sepia: true,
-            opacity: 0.5,
-        },
-        '-2': {
-            autocrop: { tolerance: 0.0002, cropOnlyFrames: false },
-            //resize: { width: 100, height: 100 },
-            scale: 1.2,
-            rotate: 90,
-            brightness: 0.5,
-            contrast: 0.3,
-            type: 'bitmap'
-        },
-        '-3': {
-            posterize: 2,
-            dither565: true,
-            background: '#ff0000',
-            type: 'jpg'
-        }
-    }))
+    .pipe(map(log))
+
+    //log.then(v => {console.log(v)})
 
     // write new image to PhotoLib
     .pipe(vfs.dest('./_xxImages/', {
       cwd: baseDir
     }))
 
-  done();
+    .on('end', function() {
+      done();
+    });
+
 });
+
 
 gulp.task('finish', function(done) {
+  vfs.src(subDirPath + imgItems, {
+      cwd: baseDir
+    })
+
+    .pipe(debug({title: 'Finished Task: \n'}))
+
+
   done();
 });
 
-var log = function(file, cb) {
-  console.log(file.path);
-  cb(null, file);
-};
+//
+// Async func:
+//
+
 
 // ****************************************************************************
 // Default Task ---------------------------------------------------------------
-gulp.task('default', gulp.series('start', 'imgSmasher', 'finish', function(done) {
+gulp.task('default', gulp.series('start', 'szImages', 'mzImages', 'finish', function(done) {
 
-  // do more stuff
+  console.log('Default:')
   done();
 
 }));
 // ****************************************************************************
 
+
+// ****************************************************************************
+// Helper Functions------------------------------------------------------------
+
+function calculateAspectRatioFit(srcWidth, srcHeight, maxWidth, maxHeight) {
+
+  var ratio = [maxWidth / srcWidth, maxHeight / srcHeight];
+  ratio = Math.min(ratio[0], ratio[1]);
+  if (ratio > 1) {
+    ratio = 1
+  };
+
+  var newHigth = Math.floor(srcHeight * ratio);
+  var newWidth = Math.floor(srcWidth * ratio);
+
+  return {
+    width: newWidth,
+    height: newHigth
+  };
+};
+
+function reverseGeoLookup(url) {
+
+  let obj = {ok: true}
+  return new Promise(resolve => {
+    r2(url).json
+    .then(resolve)
+    .catch(console.log)
+  });
+
+}
+
+// ****************************************************************************
+// Async Keys Tools -----------------------------------------------------------
+var log = function(file, cb) {
+  console.log('get EXIF:', file.path);
+  (async () => {var results = await exifTask(file)
+    console.log('trapped: ', results)
+    return results
+  })()
+  cb(null, file);
+};
+
+const log2 = async(file, cb) => {
+  const imgWM = await exifTask(file);
+  //const getImgAdd = await askImgAdd();
+  console.log('How did this work: ', imgWM)
+  cb(null, file);
+}
+
+async function log3(file, cb) {
+
+  //console.log(file.path);
+  var result = await getExifInfo(file);
+
+  cb(null, result);
+};
+
+async function exifTask(file) {
+
+  try {
+
+    let exifData = await getExifInfo(file);
+    if (typeof(exifData.gps) != 'undefined') {
+      let gpsLatLon = await dms2dec(exifData.gps.GPSLatitude, exifData.gps.GPSLatitudeRef, exifData.gps.GPSLongitude, exifData.gps.GPSLongitudeRef);
+      let latlng = JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
+      let url = gMapURL + latlng + '&key=' + gMapApiKey
+      let geoInfo = await reverseGeoLookup(url);
+      return geoInfo.results[0].formatted_address;
+    } else {
+      return 'Unknown GPS Location';
+    }
+  }
+  catch (e) {
+    console.log('error:', e);
+    return null;
+  }
+
+}
+
+function getExifInfo(file) {
+  return new Promise(resolve => {
+    exif.read(file.path)
+      .then(resolve)
+      .catch(console.log)
+  });
+}
+
+async function doAsyncStuff(imgFile, cb) {
+
+  // get EXIF info
+  console.log('file name is: ', imgFile.path)
+  var result = await getExifInfo(imgFile);
+  console.log('exif info --> ', result)
+  //convert EXIF gps to decimal
+  if (typeof(result.gps) != 'undefined') {
+    var gpsLatLon = await dms2dec(result.gps.GPSLatitude, result.gps.GPSLatitudeRef, result.gps.GPSLongitude, result.gps.GPSLongitudeRef);
+
+    // get reverse geocode info:
+    // https://developers.google.com/maps/documentation/geocoding/start
+    let latlng = JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
+    let url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + latlng + '&key=' + gMapApiKey
+    var geoInfo = await reverseGeoLookup(url);
+    // console.log('geoInfo: ', `City: ${geoInfo.results[0].formatted_address} -`,
+    // `Latitude: ${geoInfo.results[0].geometry.location.lat} -`,
+    // `Longitude: ${geoInfo.results[0].geometry.location.lng}`)
+    //console.log('File: ', imgFile.path, '\n', geoInfo.results[0].formatted_address)
+    photoInfo.location = geoInfo.results[0].formatted_address
+    //console.log('\nOther Stuff:', geoInfo.results[0].geometry)
+  } else {
+    console.warn('NO EXIF --> File: ', imgFile.path);
+    photoInfo.location = 'Unknown Location?'
+  }
+
+  // Create waterMark
+
+
+  // wrap task up!
+  cb(console.log('we are done!'));
+
+}
 
 
 gulp.task('asyncTest', function(done) {
@@ -156,24 +331,8 @@ gulp.task('asyncTest', function(done) {
     });
 });
 
-function getExifInfo(file) {
-  return new Promise(resolve => {
-    exif.read(file.path)
-      .then(resolve)
-      .catch(console.log)
-  });
-}
 
-function reverseGeoLookup(url) {
 
-  let obj = {ok: true}
-  return new Promise(resolve => {
-    r2(url).json
-    .then(resolve)
-    .catch(console.log)
-  });
-
-}
 
 gulp.task('copy', function(done) {
   gulp.src(subDirPath + imgItems, {cwd: baseDir})
@@ -184,11 +343,42 @@ gulp.task('copy', function(done) {
     });
 });
 
+// gulp.task('szImages', function(done) {
+//
+//   const inputDir = './_rnImages/**/' + imgItems;
+//   gulp.src(inputDir, {cwd: baseDir})
+//
+//     .pipe(gm(function(gmfile, done) {
+//
+//       gmfile.size(function(err, size) {
+//
+//         //console.log('Resizing: ', gmfile.source, '\n{', size.width, 'X', size.height, '}', 'to: ');
+//         var newValue = calculateAspectRatioFit(size.width, size.height, 1600, 1600)
+//         //console.log('{', newValue.width, 'X', newValue.height, '}');
+//
+//         done(null, gmfile
+//           .quality(97)
+//           .resize(newValue.width, newValue.height));
+//       });
+//
+//     }))
+//     // .pipe(rename({
+//     //   suffix: '_' + 'sz'
+//     // }))
+//
+//     .pipe(gulp.dest('./_szImages/', {cwd: baseDir}))
+//
+//     .on('end', function() {
+//       done();
+//     });
+//
+// });
+
 // gulp.task('rnImages', function(done) {
 //
 //   gulp.src(subDirPath + imgItems, {cwd: baseDir})
 //
-//     .pipe(flatmap(function(stream, file) {
+//     .pipe(map(function(stream, file) {
 //
 //       // debug:
 //       //console.warn('rnImages --> file: ', path.basename(file.path));
@@ -229,37 +419,7 @@ gulp.task('copy', function(done) {
 //     })
 // });
 //
-// // size images & set quality (97%)
-// gulp.task('szImages', function(done) {
-//
-//   const inputDir = './_rnImages/**/' + imgItems;
-//   gulp.src(inputDir, {cwd: baseDir})
-//
-//     .pipe(gm(function(gmfile, done) {
-//
-//       gmfile.size(function(err, size) {
-//
-//         //console.log('Resizing: ', gmfile.source, '\n{', size.width, 'X', size.height, '}', 'to: ');
-//         var newValue = calculateAspectRatioFit(size.width, size.height, 1600, 1600)
-//         //console.log('{', newValue.width, 'X', newValue.height, '}');
-//
-//         done(null, gmfile
-//           .quality(97)
-//           .resize(newValue.width, newValue.height));
-//       });
-//
-//     }))
-//     // .pipe(rename({
-//     //   suffix: '_' + 'sz'
-//     // }))
-//
-//     .pipe(gulp.dest('./_szImages/', {cwd: baseDir}))
-//
-//     .on('end', function() {
-//       done();
-//     });
-//
-// });
+
 //
 // // size images & set quality (97%)
 // gulp.task('wmImages', function(done) {
@@ -296,32 +456,32 @@ gulp.task('copy', function(done) {
 //
 // // Charcoal
 // // _sized [-sz] --> _sized
-// gulp.task('charcoalImages', function(done) {
-//
-//   const inputDir = './_wmImages/**/' + imgItems;
-//   gulp.src(inputDir, {cwd: baseDir})
-//
-//     .pipe(gm(function(gmfile, done) {
-//
-//       gmfile.size(function(err, size) {
-//         done(null, gmfile
-//           .charcoal());
-//       });
-//
-//     }))
-//     .pipe(rename({
-//       suffix: '_' + 'bw'
-//     }))
-//
-//     .pipe(gulp.dest('./_exImages/', {
-//       cwd: baseDir
-//     }))
-//
-//     .on('end', function() {
-//       done();
-//     });
-//
-// });
+gulp.task('charcoalImages', function(done) {
+
+  const inputDir = './_wmImages/**/' + imgItems;
+  gulp.src(inputDir, {cwd: baseDir})
+
+    .pipe(gm(function(gmfile, done) {
+
+      gmfile.size(function(err, size) {
+        done(null, gmfile
+          .charcoal());
+      });
+
+    }))
+    .pipe(rename({
+      suffix: '_' + 'bw'
+    }))
+
+    .pipe(gulp.dest('./_exImages/', {
+      cwd: baseDir
+    }))
+
+    .on('end', function() {
+      done();
+    });
+
+});
 //
 // // Sepia
 // gulp.task('sepiaImages', function(done) {
@@ -350,7 +510,7 @@ gulp.task('copy', function(done) {
 //
 // });
 //
-// // Sepia
+// // randomize file names
 // gulp.task('numFiles', function(done) {
 //
 //   const inputDir = ['./_wmImages/**/' + imgItems,
@@ -602,22 +762,7 @@ gulp.task('copy', function(done) {
 // //
 // // Helper Functions - global to all tasks
 // //
-// function calculateAspectRatioFit(srcWidth, srcHeight, maxWidth, maxHeight) {
-//
-//   var ratio = [maxWidth / srcWidth, maxHeight / srcHeight];
-//   ratio = Math.min(ratio[0], ratio[1]);
-//   if (ratio > 1) {
-//     ratio = 1
-//   };
-//
-//   var newHigth = Math.floor(srcHeight * ratio);
-//   var newWidth = Math.floor(srcWidth * ratio);
-//
-//   return {
-//     width: newWidth,
-//     height: newHigth
-//   };
-// }
+
 //
 // function gpsDecimal(direction, degrees, minutes, seconds) {
 //   var d = degrees + minutes / 60 + seconds / (60 * 60);
