@@ -149,11 +149,6 @@ gulp.task('finish', function(done) {
   done();
 });
 
-//
-// Async func:
-//
-
-
 // ****************************************************************************
 // Default Task ---------------------------------------------------------------
 gulp.task('default', gulp.series('start', 'szImages', 'mzImages', 'imgSmasher', 'finish', function(done) {
