@@ -84,7 +84,7 @@ gulp.task('szImages', function(done) {
 
 gulp.task('mzImages', function(done) {
 
-  const inputDir = './_szImages/' + imgItems;
+  const inputDir = './_szImages/**/' + imgItems;
   console.log('mzInput --> ', inputDir);
   vfs.src(inputDir, {
       cwd: baseDir
@@ -107,11 +107,21 @@ gulp.task('mzImages', function(done) {
 
 gulp.task('imgSmasher', function(done) {
 
-  const inputDir = './_rnImages/**/' + imgItems;
+  const inputDir = './_mzImages/**/' + imgItems;
+  console.log('imgSmasher --> ', inputDir);
   vfs.src(inputDir, {
       cwd: baseDir
     })
 
+    // .pipe(map(function(file, done) {
+    //   //transform data
+    //   console.log('imgSmasher: file --> ', file.path)
+    //   (async () => {var results = await exifTask(file)
+    //     //console.log('trapped: ', results)
+    //     return results
+    //   })()
+    //   done(null, file)
+    // }))
     .pipe(map(log))
 
     //log.then(v => {console.log(v)})
@@ -146,7 +156,7 @@ gulp.task('finish', function(done) {
 
 // ****************************************************************************
 // Default Task ---------------------------------------------------------------
-gulp.task('default', gulp.series('start', 'szImages', 'mzImages', 'finish', function(done) {
+gulp.task('default', gulp.series('start', 'szImages', 'mzImages', 'imgSmasher', 'finish', function(done) {
 
   console.log('Default:')
   done();
