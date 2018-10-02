@@ -3,9 +3,16 @@ const gulp = require('gulp');
 const debug = require('gulp-debug');
 const rename = require("gulp-rename");
 const vfs = require('vinyl-fs');
+const vinylPaths = require('vinyl-paths');
 const map = require('map-stream');
 const r2 = require("r2");
 
+// node basics
+// & functions libs
+const fs = require('fs');
+const path = require('path');
+const _ = require('lodash');
+const moment = require('moment');
 
 // photo manipulation and exif
 const sharp = require('sharp');
@@ -17,18 +24,13 @@ const exif = require('fast-exif');
 const jpgexif = require("jpeg-exif");
 
 // google API
-//const gMapApiKey = key.json
-//const gMapURL = key.json
+var keyStore = JSON.parse(fs.readFileSync('./key.json'));
+const gMapApiKey = keyStore.googleAPI.key;
+const gMapURL = keyStore.googleAPI.url;
 const gMap = require('@google/maps').createClient({
   key: gMapApiKey,
   Promise: Promise
 });
-
-// node functions libs
-const fs = require('fs');
-const path = require('path');
-const _ = require('lodash');
-const moment = require('moment');
 
 //
 // PhotoLib locations and item search
@@ -49,70 +51,49 @@ gulp.task('start', function(done) {
   done();
 });
 
-gulp.task('testAsync', function(cb) {
-  getFilesAsync(function(err, res) {
-    if (err) return cb(err);
-    var stream = gulp.src(res)
-      .pipe(minify())
-      .pipe(gulp.dest('build'))
-      .on('end', cb);
-  });
-});
-
 gulp.task('rnImages', function(done) {
 
   const inputDir = subDirPath + imgItems;
   let cronName = null;
   console.log('rnInput --> ', inputDir);
-  vfs.src(inputDir, {
-      cwd: baseDir
-    })
-
-    .pipe(map(function(file, done) {
-
-      let exifData = jpgexif.parseSync(file.path);
-
-      if (exifData === undefined || exifData.SubExif === undefined) {
-        var stats = fs.statSync(file.path);
-        var dtOriginal = stats.createDate;
-        var imageWidthHeight = 'unk_unk';
-      } else {
-        if (exifData.SubExif === undefined) {
-          console.log('Danger Exif: ', exifData, ' for file: ', file.path)
-        }
-        var dtOriginal = exifData.SubExif.DateTimeOriginal;
-      }
-      // photos with bad dates
-      var dtNewFileName = fDateMoment(dtOriginal);
-      if (dtNewFileName == 'Invalid date') {
-        dtNewFileName = '00000000_0000' + fRandomNumber(1, 100).toString();
-      }
-      cronName = dtNewFileName;
-      console.log('new name -> ', cronName)
-      done(null, file);
-
+  vfs.src(inputDir, {cwd: baseDir})
+    .pipe(rename(function (path) {
+      path.basename = fCronFile(path).toString();
     }))
 
-    .pipe(rename({
-      //dirname: '',
-      //suffix: '-' + imageWidthHeight,
-      basename: cronName
-    }))
-
-    .pipe(vfs.dest('./_rnImages/', {
+    .pipe(gulp.dest('./_rnImages/', {
       cwd: baseDir
     }))
+
     .on('end', function() {
       done();
     })
 });
 
-function resolveNewName(file) {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve('resolved');
-    }, 2000);
-  });
+function fCronFile(file) {
+
+    let filePath = '../../PhotoLib/albums/' + file.dirname + '/' + file.basename + file.extname;
+    let exifData = jpgexif.parseSync(filePath);
+
+    if (exifData === undefined || exifData.SubExif === undefined) {
+      var stats = fs.statSync(file.path);
+      var dtOriginal = stats.createDate;
+      var imageWidthHeight = 'unk_unk';
+    } else {
+      if (exifData.SubExif === undefined) {
+        console.log('Danger Exif: ', exifData, ' for file: ', file.path)
+      }
+      var dtOriginal = exifData.SubExif.DateTimeOriginal;
+    }
+    // photos with bad dates
+    var dtNewFileName = fDateMoment(dtOriginal);
+    if (dtNewFileName == 'Invalid date') {
+      dtNewFileName = '00000000_0000' + fRandomNumber(1, 100).toString();
+    }
+    cronName = dtNewFileName;
+    //console.log('new name -> ', cronName)
+
+    return cronName;
 }
 
 gulp.task('szImages', function(done) {
@@ -205,7 +186,7 @@ gulp.task('finish', function(done) {
 
 // ****************************************************************************
 // Default Task ---------------------------------------------------------------
-gulp.task('default', gulp.series('start', 'testAsync', 'finish', function(done) {
+gulp.task('default', gulp.series('start', 'rnImages', 'finish', function(done) {
 
   console.log('Default:')
   done();
@@ -270,6 +251,13 @@ function fDateMoment(cDT) {
 
 }
 
+function fRandomNumber(min, max) {
+
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min)) + min;
+
+}
 
 // ****************************************************************************
 // Async Keys Tools -----------------------------------------------------------
@@ -810,14 +798,6 @@ gulp.task('charcoalImages', function(done) {
 //   return (direction === 'S' || direction === 'W') ? d *= -1 : d;
 // }
 //
-
-// function fRandomNumber(min, max) {
-//
-//   min = Math.ceil(min);
-//   max = Math.floor(max);
-//   return Math.floor(Math.random() * (max - min)) + min;
-//
-// }
 //
 // var fileInfo = function(file, cb) {
 //
