@@ -17,8 +17,8 @@ const exif = require('fast-exif');
 const jpgexif = require("jpeg-exif");
 
 // google API
-const gMapApiKey = 'AIzaSyBwmF17jOrgm-m3NJVlG0Sfs_oesjA1aPQ'
-const gMapURL = 'https://maps.googleapis.com/maps/api/geocode/json?latlng='
+//const gMapApiKey = key.json
+//const gMapURL = key.json
 const gMap = require('@google/maps').createClient({
   key: gMapApiKey,
   Promise: Promise
@@ -47,6 +47,16 @@ gulp.task('start', function(done) {
   //   .pipe(debug({title: 'Start Task:'}))
 
   done();
+});
+
+gulp.task('testAsync', function(cb) {
+  getFilesAsync(function(err, res) {
+    if (err) return cb(err);
+    var stream = gulp.src(res)
+      .pipe(minify())
+      .pipe(gulp.dest('build'))
+      .on('end', cb);
+  });
 });
 
 gulp.task('rnImages', function(done) {
@@ -195,7 +205,7 @@ gulp.task('finish', function(done) {
 
 // ****************************************************************************
 // Default Task ---------------------------------------------------------------
-gulp.task('default', gulp.series('start', 'rnImages', 'szImages', 'mzImages', 'imgSmasher', 'finish', function(done) {
+gulp.task('default', gulp.series('start', 'testAsync', 'finish', function(done) {
 
   console.log('Default:')
   done();
