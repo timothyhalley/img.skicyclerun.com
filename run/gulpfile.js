@@ -57,7 +57,9 @@ gulp.task('rnImages', function(done) {
   let cronName = null;
   console.log('rnInput --> ', inputDir);
   vfs.src(inputDir, {cwd: baseDir})
+    .pipe(getFileName(fileName))
     .pipe(rename(function (path) {
+       console.log(fileName);
       path.basename = fCronFile(path).toString();
     }))
 
@@ -69,6 +71,16 @@ gulp.task('rnImages', function(done) {
       done();
     })
 });
+var Stream = require('stream');
+var fileName = '';
+function getFileName() {
+  var stream = new Stream.Transform({ objectMode: true });
+  stream._transform = function(file, unused, callback) {
+    fileName = file.path;
+    callback(null, file);
+  };
+ return stream;
+}
 
 function fCronFile(file) {
 
