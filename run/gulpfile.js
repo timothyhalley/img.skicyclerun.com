@@ -3,7 +3,6 @@ const gulp = require('gulp');
 const debug = require('gulp-debug');
 const rename = require("gulp-rename");
 const vfs = require('vinyl-fs');
-const vinylPaths = require('vinyl-paths');
 const map = require('map-stream');
 const r2 = require("r2");
 
@@ -11,6 +10,7 @@ const r2 = require("r2");
 // & functions libs
 const fs = require('fs');
 const path = require('path');
+const Stream = require('stream');
 const _ = require('lodash');
 const moment = require('moment');
 
@@ -55,11 +55,14 @@ gulp.task('rnImages', function(done) {
 
   const inputDir = subDirPath + imgItems;
   let cronName = null;
+
   console.log('rnInput --> ', inputDir);
-  vfs.src(inputDir, {cwd: baseDir})
+  vfs.src(inputDir, {
+      cwd: baseDir
+    })
     .pipe(getFileName(fileName))
-    .pipe(rename(function (path) {
-       console.log(fileName);
+    .pipe(rename(function(path) {
+      //console.log(fileName);
       path.basename = fCronFile(path).toString();
     }))
 
@@ -71,8 +74,9 @@ gulp.task('rnImages', function(done) {
       done();
     })
 });
-var Stream = require('stream');
-var fileName = '';
+
+let fileName = null;
+
 function getFileName() {
   var stream = new Stream.Transform({ objectMode: true });
   stream._transform = function(file, unused, callback) {
@@ -116,10 +120,11 @@ gulp.task('szImages', function(done) {
       cwd: baseDir
     })
 
+    .pipe(map(log2))
     .pipe(gm(function(gmfile, done) {
-
+      console.log('Path: ', gmfile.source)
       gmfile.size(function(err, size) {
-
+        console.log('sz Geo code: ', imgWM)
         //console.log('Resizing: ', gmfile.source, '\n{', size.width, 'X', size.height, '}', 'to: ');
         var newValue = calculateAspectRatioFit(size.width, size.height, 1600, 1600)
         //console.log('{', newValue.width, 'X', newValue.height, '}');
@@ -165,10 +170,10 @@ gulp.task('mzImages', function(done) {
 
 });
 
-gulp.task('imgSmasher', function(done) {
+gulp.task('gcImages', function(done) {
 
   const inputDir = './_mzImages/**/' + imgItems;
-  console.log('imgSmasher --> ', inputDir);
+  console.log('gcImages --> ', inputDir);
   vfs.src(inputDir, {
       cwd: baseDir
     })
@@ -176,7 +181,7 @@ gulp.task('imgSmasher', function(done) {
     .pipe(map(log2))
 
     // write new image to PhotoLib
-    .pipe(vfs.dest('./_xxImages/', {
+    .pipe(vfs.dest('./_gcImages/', {
       cwd: baseDir
     }))
 
@@ -198,7 +203,8 @@ gulp.task('finish', function(done) {
 
 // ****************************************************************************
 // Default Task ---------------------------------------------------------------
-gulp.task('default', gulp.series('start', 'rnImages', 'finish', function(done) {
+//gulp.task('default', gulp.series('start', 'rnImages', 'szImages', 'mzImages', 'finish', function(done) {
+gulp.task('default', gulp.series('start', 'szImages', 'finish', function(done) {
 
   console.log('Default:')
   done();
@@ -275,17 +281,18 @@ function fRandomNumber(min, max) {
 // Async Keys Tools -----------------------------------------------------------
 const log = function(file, cb) {
   console.log('get EXIF:', file.path);
-  (async () => {var results = await exifTask(file)
-    console.log('trapped: ', results)
-    return results
+  (async () => {var imgWM = await exifTask(file)
+    //console.log('trapped: ', results)
+    return imgWM;
   })()
   cb(null, file);
 };
 
+let imgWM = null;
 const log2 = async(file, cb) => {
-  const imgWM = await exifTask(file);
+  imgWM = await exifTask(file);
   //const getImgAdd = await askImgAdd();
-  console.log('How did this work: ', file.path, ' ', imgWM)
+  //console.log('Location Geo code: ', imgWM)
   cb(null, file);
 }
 
