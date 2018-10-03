@@ -120,11 +120,19 @@ gulp.task('szImages', function(done) {
       cwd: baseDir
     })
 
-    .pipe(map(log2))
+    //#ref --> https://codeburst.io/async-await-in-5-minutes-4081284ffed7
     .pipe(gm(function(gmfile, done) {
-      console.log('Path: ', gmfile.source)
+      //const geoVal = async(gm) => getGeoLocation(gmfile.source)//.then((geoVal) => console.log(geoVal))
+      //let geoVal;
+      //getGeoLocation(gmfile.source).then((geoVal) => console.log(geoVal))
+      //let geoVal = funcGeoLocation(gmfile.source);
+      console.log('Image --> ', gmfile.source)
+      const geoLoc = funcGeoLocation(gmfile.source);
+      geoLoc.then(x => console.log('\tGeoLoc: ', x))
+
+
       gmfile.size(function(err, size) {
-        console.log('sz Geo code: ', imgWM)
+
         //console.log('Resizing: ', gmfile.source, '\n{', size.width, 'X', size.height, '}', 'to: ');
         var newValue = calculateAspectRatioFit(size.width, size.height, 1600, 1600)
         //console.log('{', newValue.width, 'X', newValue.height, '}');
@@ -204,7 +212,7 @@ gulp.task('finish', function(done) {
 // ****************************************************************************
 // Default Task ---------------------------------------------------------------
 //gulp.task('default', gulp.series('start', 'rnImages', 'szImages', 'mzImages', 'finish', function(done) {
-gulp.task('default', gulp.series('start', 'szImages', 'finish', function(done) {
+gulp.task('default', gulp.series('start', 'rnImages', 'szImages', 'finish', function(done) {
 
   console.log('Default:')
   done();
@@ -304,15 +312,33 @@ async function log3(file, cb) {
   cb(null, result);
 };
 
-async function exifTask(file) {
+const getGeoLocation = async (file) => {
+
+  try {
+    let exifData = await getExifInfo(file);
+    if (typeof(exifData.gps) != 'undefined') {
+      let gpsLatLon = await dms2dec(exifData.gps.GPSLatitude, exifData.gps.GPSLatitudeRef, exifData.gps.GPSLongitude, exifData.gps.GPSLongitudeRef);
+      let latlng = await JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
+      let url = await gMapURL + latlng + '&key=' + gMapApiKey
+      let geoInfo = await reverseGeoLookup(url);
+      return geoInfo.results[0].formatted_address;
+    }
+
+  } catch (e) {
+    return e
+  }
+}
+
+async function funcGeoLocation(file) {
 
   try {
 
     let exifData = await getExifInfo(file);
+
     if (typeof(exifData.gps) != 'undefined') {
       let gpsLatLon = await dms2dec(exifData.gps.GPSLatitude, exifData.gps.GPSLatitudeRef, exifData.gps.GPSLongitude, exifData.gps.GPSLongitudeRef);
-      let latlng = JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
-      let url = gMapURL + latlng + '&key=' + gMapApiKey
+      let latlng = await JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
+      let url = await gMapURL + latlng + '&key=' + gMapApiKey
       let geoInfo = await reverseGeoLookup(url);
       return geoInfo.results[0].formatted_address;
     } else {
@@ -328,7 +354,7 @@ async function exifTask(file) {
 
 function getExifInfo(file) {
   return new Promise(resolve => {
-    exif.read(file.path)
+    exif.read(file)
       .then(resolve)
       .catch(console.log)
   });
