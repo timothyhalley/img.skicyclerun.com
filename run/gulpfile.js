@@ -115,21 +115,32 @@ function fCronFile(file) {
 gulp.task('szImages', function(done) {
 
   const inputDir = './_rnImages/**/' + imgItems;
+  let gURL = null;
+  let gAdd = null;
   console.log('szInput --> ', inputDir);
   vfs.src(inputDir, {
       cwd: baseDir
     })
-
     //#ref --> https://codeburst.io/async-await-in-5-minutes-4081284ffed7
+    //https://dev.to/maxart2501/gotchas-about-asyncawait-and-promises-9di
     .pipe(gm(function(gmfile, done) {
-      //const geoVal = async(gm) => getGeoLocation(gmfile.source)//.then((geoVal) => console.log(geoVal))
-      //let geoVal;
-      //getGeoLocation(gmfile.source).then((geoVal) => console.log(geoVal))
-      //let geoVal = funcGeoLocation(gmfile.source);
-      console.log('Image --> ', gmfile.source)
-      const geoLoc = funcGeoLocation(gmfile.source);
-      geoLoc.then(x => console.log('\tGeoLoc: ', x))
 
+      console.log('Image --> ', gmfile.source)
+
+      getGeoLocation(gmfile.source).then(v => {
+        //console.log('\t geo info -->', v);
+        gURL = v;
+        getGeoAddress(gURL).then(a => {
+          gAdd = a;
+        })
+      });
+
+      console.log('\t geo info -->', gAdd);
+
+      // *** works but not fully in-sync
+      // const geoLoc = funcGeoLocation(gmfile.source);
+      // geoLoc.then(x => console.log('\tGeoLoc: ', x))
+      // --- works but not fully in-sync
 
       gmfile.size(function(err, size) {
 
@@ -319,15 +330,27 @@ const getGeoLocation = async (file) => {
     if (typeof(exifData.gps) != 'undefined') {
       let gpsLatLon = await dms2dec(exifData.gps.GPSLatitude, exifData.gps.GPSLatitudeRef, exifData.gps.GPSLongitude, exifData.gps.GPSLongitudeRef);
       let latlng = await JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
-      let url = await gMapURL + latlng + '&key=' + gMapApiKey
-      let geoInfo = await reverseGeoLookup(url);
-      return geoInfo.results[0].formatted_address;
+      let gurl = await gMapURL + latlng + '&key=' + gMapApiKey
+      //let resp = await r2(gurl).json;
+      //let geoLoc = await resp.results[0].formatted_address;
+      return gurl;
+      //let geoInfo = await reverseGeoLookup(url);
+      //return geoInfo.results[0].formatted_address;
     }
 
   } catch (e) {
     return e
   }
 }
+
+const getGeoAddress = async url => {
+  try {
+    const response = await r2(url).json;
+    return response.results[0].formatted_address;
+  } catch (error) {
+    console.log(error);
+  }
+};
 
 async function funcGeoLocation(file) {
 
@@ -359,98 +382,6 @@ function getExifInfo(file) {
       .catch(console.log)
   });
 }
-
-async function doAsyncStuff(imgFile, cb) {
-
-  // get EXIF info
-  console.log('file name is: ', imgFile.path)
-  var result = await getExifInfo(imgFile);
-  console.log('exif info --> ', result)
-  //convert EXIF gps to decimal
-  if (typeof(result.gps) != 'undefined') {
-    var gpsLatLon = await dms2dec(result.gps.GPSLatitude, result.gps.GPSLatitudeRef, result.gps.GPSLongitude, result.gps.GPSLongitudeRef);
-
-    // get reverse geocode info:
-    // https://developers.google.com/maps/documentation/geocoding/start
-    let latlng = JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
-    let url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + latlng + '&key=' + gMapApiKey
-    var geoInfo = await reverseGeoLookup(url);
-    // console.log('geoInfo: ', `City: ${geoInfo.results[0].formatted_address} -`,
-    // `Latitude: ${geoInfo.results[0].geometry.location.lat} -`,
-    // `Longitude: ${geoInfo.results[0].geometry.location.lng}`)
-    //console.log('File: ', imgFile.path, '\n', geoInfo.results[0].formatted_address)
-    photoInfo.location = geoInfo.results[0].formatted_address
-    //console.log('\nOther Stuff:', geoInfo.results[0].geometry)
-  } else {
-    console.warn('NO EXIF --> File: ', imgFile.path);
-    photoInfo.location = 'Unknown Location?'
-  }
-
-  // Create waterMark
-
-
-  // wrap task up!
-  cb(console.log('we are done!'));
-
-}
-
-
-gulp.task('asyncTest', function(done) {
-
-  vfs.src(subDirPath + imgItems, {
-      cwd: baseDir
-    })
-
-    .pipe(map(async function(imgFile, fini) {
-
-      var photoInfo = {
-        file: imgFile.path,
-        location: null
-      }
-
-      // get EXIF info
-      var result = await getExifInfo(imgFile);
-
-      // convert EXIF gps to decimal
-      if (typeof(result.gps) != 'undefined') {
-        var gpsLatLon = await dms2dec(result.gps.GPSLatitude, result.gps.GPSLatitudeRef, result.gps.GPSLongitude, result.gps.GPSLongitudeRef);
-
-        // get reverse geocode info:
-        // https://developers.google.com/maps/documentation/geocoding/start
-        let latlng = JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
-        let url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng=' + latlng + '&key=' + gMapApiKey
-        var geoInfo = await reverseGeoLookup(url);
-        // console.log('geoInfo: ', `City: ${geoInfo.results[0].formatted_address} -`,
-        // `Latitude: ${geoInfo.results[0].geometry.location.lat} -`,
-        // `Longitude: ${geoInfo.results[0].geometry.location.lng}`)
-        //console.log('File: ', imgFile.path, '\n', geoInfo.results[0].formatted_address)
-        photoInfo.location = geoInfo.results[0].formatted_address
-        //console.log('\nOther Stuff:', geoInfo.results[0].geometry)
-      } else {
-        console.warn('NO EXIF --> File: ', imgFile.path);
-        photoInfo.location = 'Unknown Location?'
-      }
-
-      // Create waterMark
-
-
-      // wrap task up!
-      fini(console.log('we are done!'));
-
-    }))
-
-    // write new image to PhotoLib
-    .pipe(vfs.dest('./_xxImages/', {
-      cwd: baseDir
-    }))
-
-    .on('end', function() {
-      done();
-    });
-});
-
-
-
 
 gulp.task('copy', function(done) {
   gulp.src(subDirPath + imgItems, {cwd: baseDir})
