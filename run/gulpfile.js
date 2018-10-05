@@ -339,7 +339,7 @@ async function funcGeoLocation(file) {
       let gpsLatLon = await dms2dec(exifData.gps.GPSLatitude, exifData.gps.GPSLatitudeRef, exifData.gps.GPSLongitude, exifData.gps.GPSLongitudeRef);
       let latlng = await JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
       let url = await gMapURL + latlng + '&key=' + gMapApiKey
-      let geoInfo = await reverseGeoLookup(url);
+      let geoInfo = await (await reverseGeoLookup(url));
       return geoInfo.results[0].formatted_address;
     } else {
       return 'Unknown GPS Location';
