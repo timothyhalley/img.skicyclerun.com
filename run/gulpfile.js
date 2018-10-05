@@ -117,6 +117,7 @@ gulp.task('szImages', function(done) {
   const inputDir = './_rnImages/**/' + imgItems;
   let gURL = null;
   let gAdd = null;
+  let pEXIF = null;
   console.log('szInput --> ', inputDir);
   vfs.src(inputDir, {
       cwd: baseDir
@@ -125,17 +126,28 @@ gulp.task('szImages', function(done) {
     //https://dev.to/maxart2501/gotchas-about-asyncawait-and-promises-9di
     .pipe(gm(function(gmfile, done) {
 
-      console.log('Image --> ', gmfile.source)
 
-      getGeoLocation(gmfile.source).then(v => {
-        //console.log('\t geo info -->', v);
-        gURL = v;
-        getGeoAddress(gURL).then(a => {
-          gAdd = a;
-        })
-      });
+      //console.log('Image Starting block --> ', gmfile.source)
+      const geoVal = getGeoAddress(gmfile.source)
+        .then(data => {
+          console.log('Image --> ', gmfile.source)
+          console.log('\t Address -->', data);
+          return data;
+        });
 
-      console.log('\t geo info -->', gAdd);
+      let p1 = Promise.all([getGeoAddress(gmfile.source)]);
+      console.log('Here is a promise to the data: ', p1)
+
+      // works but abstracting out calls
+      // getGeoLocation(gmfile.source).then(v => {
+      //   //console.log('\t geo info -->', v);
+      //   gURL = v;
+      //   geoAddress(gURL).then(a => {
+      //     gAdd = a;
+      //   })
+      // });
+
+      //console.log('\t geo info -->', gAdd);
 
       // *** works but not fully in-sync
       // const geoLoc = funcGeoLocation(gmfile.source);
@@ -223,7 +235,7 @@ gulp.task('finish', function(done) {
 // ****************************************************************************
 // Default Task ---------------------------------------------------------------
 //gulp.task('default', gulp.series('start', 'rnImages', 'szImages', 'mzImages', 'finish', function(done) {
-gulp.task('default', gulp.series('start', 'rnImages', 'szImages', 'finish', function(done) {
+gulp.task('default', gulp.series('start', 'szImages', 'finish', function(done) {
 
   console.log('Default:')
   done();
@@ -323,27 +335,46 @@ async function log3(file, cb) {
   cb(null, result);
 };
 
+async function getGeoAddress(file) {
+
+  try {
+    const data = await getGeoLocation(file);
+    //const result = getData(data);
+    return data;
+  } catch (e) {
+    console.error('Error in getGeoAddress: ', e.message)
+  }
+
+}
+
+function getData(promiseData) {
+
+  promiseData.then( data => {
+    return data;
+  })
+
+}
 const getGeoLocation = async (file) => {
 
   try {
     let exifData = await getExifInfo(file);
     if (typeof(exifData.gps) != 'undefined') {
+      // return exifData;
       let gpsLatLon = await dms2dec(exifData.gps.GPSLatitude, exifData.gps.GPSLatitudeRef, exifData.gps.GPSLongitude, exifData.gps.GPSLongitudeRef);
       let latlng = await JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
       let gurl = await gMapURL + latlng + '&key=' + gMapApiKey
-      //let resp = await r2(gurl).json;
-      //let geoLoc = await resp.results[0].formatted_address;
-      return gurl;
-      //let geoInfo = await reverseGeoLookup(url);
-      //return geoInfo.results[0].formatted_address;
+      let gres = await r2(gurl).json;
+      let geoAddr = await gres.results[0].formatted_address;
+      return geoAddr;
+    } else {
+      return 'Unknown Location';
     }
-
   } catch (e) {
     return e
   }
 }
 
-const getGeoAddress = async url => {
+const geoAddress = async url => {
   try {
     const response = await r2(url).json;
     return response.results[0].formatted_address;
@@ -362,7 +393,7 @@ async function funcGeoLocation(file) {
       let gpsLatLon = await dms2dec(exifData.gps.GPSLatitude, exifData.gps.GPSLatitudeRef, exifData.gps.GPSLongitude, exifData.gps.GPSLongitudeRef);
       let latlng = await JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
       let url = await gMapURL + latlng + '&key=' + gMapApiKey
-      let geoInfo = await (await reverseGeoLookup(url));
+      let geoInfo = await reverseGeoLookup(url);
       return geoInfo.results[0].formatted_address;
     } else {
       return 'Unknown GPS Location';
