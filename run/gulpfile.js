@@ -126,38 +126,20 @@ gulp.task('szImages', function(done) {
     //https://dev.to/maxart2501/gotchas-about-asyncawait-and-promises-9di
     .pipe(gm(function(gmfile, done) {
 
-
       //console.log('Image Starting block --> ', gmfile.source)
-      const geoVal = getGeoAddress(gmfile.source)
+      let geoAddLocation = null;
+      getGeoAddress(gmfile.source)
         .then(data => {
-          console.log('Image --> ', gmfile.source)
-          console.log('\t Address -->', data);
+          console.log('--> Image --> ', gmfile.source)
+          console.log('\t --> Address -->', data);
+
           return data;
         });
 
-      let p1 = Promise.all([getGeoAddress(gmfile.source)]);
-      console.log('Here is a promise to the data: ', p1)
-
-      // works but abstracting out calls
-      // getGeoLocation(gmfile.source).then(v => {
-      //   //console.log('\t geo info -->', v);
-      //   gURL = v;
-      //   geoAddress(gURL).then(a => {
-      //     gAdd = a;
-      //   })
-      // });
-
-      //console.log('\t geo info -->', gAdd);
-
-      // *** works but not fully in-sync
-      // const geoLoc = funcGeoLocation(gmfile.source);
-      // geoLoc.then(x => console.log('\tGeoLoc: ', x))
-      // --- works but not fully in-sync
-
       gmfile.size(function(err, size) {
 
-        //console.log('Resizing: ', gmfile.source, '\n{', size.width, 'X', size.height, '}', 'to: ');
-        var newValue = calculateAspectRatioFit(size.width, size.height, 1600, 1600)
+        console.log('Resizing: ', gmfile.source, '\n{', size.width, 'X', size.height, '}', 'location: ', geoAddLocation);
+        var newValue = calculateAspectRatioFit(size.width, size.height, 1600, 1600);
         //console.log('{', newValue.width, 'X', newValue.height, '}');
 
         done(null, gmfile
