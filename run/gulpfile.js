@@ -5,6 +5,8 @@ const rename = require("gulp-rename");
 const vfs = require('vinyl-fs');
 const map = require('map-stream');
 const r2 = require("r2");
+const asyncDone = require('async-done');
+const test = require('./test.js');
 
 // node basics
 // & functions libs
@@ -77,41 +79,6 @@ gulp.task('rnImages', function(done) {
 
 let fileName = null;
 
-function getFileName() {
-  var stream = new Stream.Transform({ objectMode: true });
-  stream._transform = function(file, unused, callback) {
-    fileName = file.path;
-    callback(null, file);
-  };
- return stream;
-}
-
-function fCronFile(file) {
-
-    let filePath = '../../PhotoLib/albums/' + file.dirname + '/' + file.basename + file.extname;
-    let exifData = jpgexif.parseSync(filePath);
-
-    if (exifData === undefined || exifData.SubExif === undefined) {
-      var stats = fs.statSync(file.path);
-      var dtOriginal = stats.createDate;
-      var imageWidthHeight = 'unk_unk';
-    } else {
-      if (exifData.SubExif === undefined) {
-        console.log('Danger Exif: ', exifData, ' for file: ', file.path)
-      }
-      var dtOriginal = exifData.SubExif.DateTimeOriginal;
-    }
-    // photos with bad dates
-    var dtNewFileName = fDateMoment(dtOriginal);
-    if (dtNewFileName == 'Invalid date') {
-      dtNewFileName = '00000000_0000' + fRandomNumber(1, 100).toString();
-    }
-    cronName = dtNewFileName;
-    //console.log('new name -> ', cronName)
-
-    return cronName;
-}
-
 gulp.task('szImages', function(done) {
 
   const inputDir = './_rnImages/**/' + imgItems;
@@ -127,18 +94,20 @@ gulp.task('szImages', function(done) {
     .pipe(gm(function(gmfile, done) {
 
       //console.log('Image Starting block --> ', gmfile.source)
-      let geoAddLocation = null;
-      getGeoAddress(gmfile.source)
-        .then(data => {
-          console.log('--> Image --> ', gmfile.source)
-          console.log('\t --> Address -->', data);
+      console.log('lastChance: ', test.returnTrue())
 
-          return data;
-        });
+      // working -->
+      // lastChance = getGeoAddress(gmfile.source)
+      //   .then(data => {
+      //     console.log('--> Image --> ', gmfile.source)
+      //     console.log('\t --> Address -->', data);
+      //
+      //     return data;
+      //   });
 
       gmfile.size(function(err, size) {
 
-        console.log('Resizing: ', gmfile.source, '\n{', size.width, 'X', size.height, '}', 'location: ', geoAddLocation);
+        //console.log('Resizing: ', gmfile.source, '\n{', size.width, 'X', size.height, '}');
         var newValue = calculateAspectRatioFit(size.width, size.height, 1600, 1600);
         //console.log('{', newValue.width, 'X', newValue.height, '}');
 
@@ -228,6 +197,14 @@ gulp.task('default', gulp.series('start', 'szImages', 'finish', function(done) {
 
 // ****************************************************************************
 // Helper Functions------------------------------------------------------------
+function getFileName() {
+  var stream = new Stream.Transform({ objectMode: true });
+  stream._transform = function(file, unused, callback) {
+    fileName = file.path;
+    callback(null, file);
+  };
+ return stream;
+}
 
 function calculateAspectRatioFit(srcWidth, srcHeight, maxWidth, maxHeight) {
 
@@ -290,6 +267,32 @@ function fRandomNumber(min, max) {
 
 }
 
+function fCronFile(file) {
+
+    let filePath = '../../PhotoLib/albums/' + file.dirname + '/' + file.basename + file.extname;
+    let exifData = jpgexif.parseSync(filePath);
+
+    if (exifData === undefined || exifData.SubExif === undefined) {
+      var stats = fs.statSync(file.path);
+      var dtOriginal = stats.createDate;
+      var imageWidthHeight = 'unk_unk';
+    } else {
+      if (exifData.SubExif === undefined) {
+        console.log('Danger Exif: ', exifData, ' for file: ', file.path)
+      }
+      var dtOriginal = exifData.SubExif.DateTimeOriginal;
+    }
+    // photos with bad dates
+    var dtNewFileName = fDateMoment(dtOriginal);
+    if (dtNewFileName == 'Invalid date') {
+      dtNewFileName = '00000000_0000' + fRandomNumber(1, 100).toString();
+    }
+    cronName = dtNewFileName;
+    //console.log('new name -> ', cronName)
+
+    return cronName;
+}
+
 // ****************************************************************************
 // Async Keys Tools -----------------------------------------------------------
 const log = function(file, cb) {
@@ -317,11 +320,37 @@ async function log3(file, cb) {
   cb(null, result);
 };
 
+// async function returnTrue() {
+//
+//   // create a new promise inside of the async function
+//   let promise = new Promise((resolve, reject) => {
+//     setTimeout(() => resolve(true), 1000) // resolve
+//   });
+//
+//   // wait for the promise to resolve
+//   let result = await promise;
+//
+//   // console log the result (true)
+//   return result;
+// }
+
+async function returnLocation(file) {
+
+  let promise = new Promise((resolve, reject) => {
+    exif.read(file).then(resolve).catch(console.log)
+  });
+
+  // wait for the promise to resolve
+  let result = await promise;
+
+  // console log the result (true)
+  return result;
+}
+
 async function getGeoAddress(file) {
 
   try {
     const data = await getGeoLocation(file);
-    //const result = getData(data);
     return data;
   } catch (e) {
     console.error('Error in getGeoAddress: ', e.message)
@@ -329,13 +358,6 @@ async function getGeoAddress(file) {
 
 }
 
-function getData(promiseData) {
-
-  promiseData.then( data => {
-    return data;
-  })
-
-}
 const getGeoLocation = async (file) => {
 
   try {
