@@ -15,13 +15,26 @@ const baseDir = '../../../skicyclerun/PhotoLib/';
 const subDirPath = 'albums/**/'
 const imgItems = '*.{heic,jpg,jpeg,gif,png,HEIC,JPG,JPEG,GIF,PNG}';
 
-(async () => {
-    const paths = await globby([baseDir, imgItems]);
+function dbInit () {
+  db.defaults({ direcotry: [], file: {} })
+  .write()
+}
+db.get('posts')
+  .push({ id: 1, title: 'lowdb is awesome'})
+  .write()
 
-    paths.forEach(dir => {
-      console.log(path.basename(dir))
-    })
-
-    //return paths;
-
-})();
+// (async () => {
+//     const paths = await globby([baseDir, imgItems]);
+//     let n = 0;
+//     paths.forEach(dir => {
+//       console.log(path.basename(dir))
+//
+//       db.get('direcotry')
+//         .push({ id: n, directory: n, file: n})
+//         .write()
+//       n++;
+//     })
+//
+//     //return paths;
+//
+// })();
