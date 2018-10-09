@@ -1,40 +1,55 @@
+'use strict'
+// app library functions:
+const _f = require('./app_func.js');
+const _fdb = require('./appdb_func.js');
+
 // Node core:
 const path = require('path');
 
 // Addon Node modules:
 const globby = require('globby');
 
-const low = require('lowdb')
-const FileSync = require('lowdb/adapters/FileSync')
-const adapter = new FileSync('db.json')
-const db = low(adapter)
-
-
 // PhotoLib locations and item search
 const baseDir = '../../../skicyclerun/PhotoLib/';
 const subDirPath = 'albums/**/'
 const imgItems = '*.{heic,jpg,jpeg,gif,png,HEIC,JPG,JPEG,GIF,PNG}';
 
-function dbInit () {
-  db.defaults({ direcotry: [], file: {} })
-  .write()
-}
-db.get('posts')
-  .push({ id: 1, title: 'lowdb is awesome'})
-  .write()
+_fdb.dbInit();
 
-// (async () => {
-//     const paths = await globby([baseDir, imgItems]);
-//     let n = 0;
-//     paths.forEach(dir => {
-//       console.log(path.basename(dir))
+// async function getAllPhotos() {
 //
-//       db.get('direcotry')
-//         .push({ id: n, directory: n, file: n})
-//         .write()
-//       n++;
-//     })
+//   const photos = await globby([baseDir, imgItems]);
 //
-//     //return paths;
+//   return photos;
+// }
 //
-// })();
+// async function runDown() {
+//   var result = getAllPhotos();
+//   return result;
+// }
+//
+// console.log('BEFORE');
+//
+// let allPhotos =[];
+// allPhotos = runDown();
+// console.log('Photos --> ', allPhotos);
+//
+// console.log('AFTER');
+
+
+//
+let total = (async () => {
+
+  try {
+    const paths = await globby([baseDir, imgItems]);
+    //console.log('Number of photos: ', paths.length)
+    await paths.forEach(photo => {
+      //console.log('photo --> ', path.basename(photo))
+      _fdb.upsert(photo);
+    })
+  } catch (e) {
+    console.error('ERROR: ', e);
+  }
+})();
+
+console.log(total)

@@ -1,15 +1,22 @@
 {
-  "name": "auto",
+  "name": "photomasher",
   "version": "1.0.0",
   "description": "Photo Automation to AWS",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "El Feo Gato",
   "license": "ISC",
   "devDependencies": {
     "globby": "^8.0.1",
-    "lowdb": "^1.0.0"
+    "lowdb": "^1.0.0",
+    "shortid": "^2.2.13"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "*.json"
+    ],
+    "delay": "0250"
   }
 }
