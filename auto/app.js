@@ -19,8 +19,6 @@ _fdb.dbInit();
 console.log('BEFORE');
 let globPath = baseDir + subDirPath;
 let myPhotos = _f.getAllPhotos(globPath);
-let newData = myPhotos.then(data => newData = data);
-console.log(newData)
 console.log('AFTER');
 
 // // *** works!
