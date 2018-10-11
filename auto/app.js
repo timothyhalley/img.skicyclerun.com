@@ -15,41 +15,25 @@ const subDirPath = 'albums/**/'
 const imgItems = '*.{heic,jpg,jpeg,gif,png,HEIC,JPG,JPEG,GIF,PNG}';
 
 _fdb.dbInit();
+//
+console.log('BEFORE');
+let globPath = baseDir + subDirPath;
+let myPhotos = _f.getAllPhotos(globPath);
+let newData = myPhotos.then(data => newData = data);
+console.log(newData)
+console.log('AFTER');
 
-// async function getAllPhotos() {
+// // *** works!
+// (async () => {
 //
-//   const photos = await globby([baseDir, imgItems]);
-//
-//   return photos;
-// }
-//
-// async function runDown() {
-//   var result = getAllPhotos();
-//   return result;
-// }
-//
-// console.log('BEFORE');
-//
-// let allPhotos =[];
-// allPhotos = runDown();
-// console.log('Photos --> ', allPhotos);
-//
-// console.log('AFTER');
-
-
-//
-let total = (async () => {
-
-  try {
-    const paths = await globby([baseDir, imgItems]);
-    //console.log('Number of photos: ', paths.length)
-    await paths.forEach(photo => {
-      //console.log('photo --> ', path.basename(photo))
-      _fdb.upsert(photo);
-    })
-  } catch (e) {
-    console.error('ERROR: ', e);
-  }
-})();
-
-console.log(total)
+//   try {
+//     const paths = await globby([baseDir, imgItems]);
+//     //console.log('Number of photos: ', paths.length)
+//     await paths.forEach(photo => {
+//       //console.log('photo --> ', path.basename(photo))
+//       _fdb.upsert(photo);
+//     })
+//   } catch (e) {
+//     console.error('ERROR: ', e);
+//   }
+// })();
