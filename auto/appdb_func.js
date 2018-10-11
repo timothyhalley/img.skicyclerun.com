@@ -19,22 +19,18 @@ module.exports = {
       .write()
   },
 
-  upsert: function(photo) {
-
-    var photoName = path.basename(photo);
-    var photoDir = path.dirname(photo);
-    var photoAlbum = _f.getAlbum(photo);
-    var photoKey = photoAlbum + '-' + photoName;
+  upsert: function(photoObj) {
 
     db.get('photos')
       .upsert({
-        key: photoKey,
-        file: photoName,
-        directory: photoDir,
-        album: photoAlbum
+        key: photoObj.key,
+        file: photoObj.name,
+        directory: photoObj.dir,
+        album: photoObj.album,
+        geoLoc: photoObj.geo,
+        datetime: photoObj.cdt
       })
       .write()
-
   }
 
 }

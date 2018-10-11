@@ -16,10 +16,11 @@ const imgItems = '*.{heic,jpg,jpeg,gif,png,HEIC,JPG,JPEG,GIF,PNG}';
 
 _fdb.dbInit();
 //
-console.log('BEFORE');
+console.log('... getting all photos and album info ...');
 let globPath = baseDir + subDirPath;
-let myPhotos = _f.getAllPhotos(globPath);
-console.log('AFTER');
+_f.getAllPhotos(globPath);
+// console.log('... getting geo location info ...');
+// _f.getGeoLocation(globPath);
 
 // // *** works!
 // (async () => {

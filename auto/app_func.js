@@ -1,50 +1,135 @@
 'use strict'
+// ____  __  __  _  _   ___       __    ____  ____
+// ( ___)(  )(  )( \( ) / __) ___ (  )  (_  _)(  _ \
+// )__)  )(__)(  )  ( ( (__ (___) )(__  _)(_  ) _ <
+// (__)  (______)(_)\_) \___)     (____)(____)(____/
+//
+const fs = require('fs');
 const path = require('path');
 const globby = require('globby');
+const _fdb = require('./appdb_func.js');
+
+
+// google API
+var keyStore = JSON.parse(fs.readFileSync('./key.json'));
+const gMapApiKey = keyStore.googleAPI.key;
+const gMapURL = keyStore.googleAPI.url;
+const gMap = require('@google/maps').createClient({
+  key: gMapApiKey,
+  Promise: Promise
+});
+const exif = require('fast-exif');
+const dms2dec = require('dms2dec');
+const r2 = require("r2");
+
 
 module.exports = {
 
-  getAllPhotos: function(albumPath) {
-    // const paths = await globby(albumPath);
-    // //console.log('paths:', paths)
+  getAllPhotos: async function(albumPath) {
 
-    let p = new Promise((resolve,reject) => {
-       // do some async task
-       resolve(globby(albumPath));
-    });
+      try {
+        const photos = await globby(albumPath);
+        await photos.forEach(async photo => {
+          var photoName = path.basename(photo);
+          var photoDir = path.dirname(photo);
+          var photoAlbum = getAlbumName(photo);
+          var photoKey = photoAlbum + '-' + photoName;
+          var photoLoc = 'Unknown Location (A)';
+          var photoCDT = 'Unknown Date Time';
 
-    return p.then(data => data)
-  },
+          let exifData = await getExifInfo(photo);
+          if (typeof(exifData.gps) != 'undefined') {
+            let gpsLatLon = await dms2dec(exifData.gps.GPSLatitude, exifData.gps.GPSLatitudeRef, exifData.gps.GPSLongitude, exifData.gps.GPSLongitudeRef);
+            let latlng = await JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
+            let gurl = await gMapURL + latlng + '&key=' + gMapApiKey
+            let gres = await r2(gurl).json;
+            photoLoc = await gres.results[0].formatted_address;
+            //console.log('Photo: ', photo, ' ... is located here -->\n', photoGeo)
+          }
+          //console.log('EXIF \n', exifData.exif.DateTimeOriginal)
+          if (typeof(exifData.exif) != 'undefined') {
+            var photoCDT = exifData.exif.DateTimeOriginal;
+          }
 
-  getAlbum: function(pathOf1Photo) {
+          let photoObj = {
+            key: photoKey,
+            name: photoName,
+            dir: photoDir,
+            album: photoAlbum,
+            geo: photoLoc,
+            cdt: photoCDT
+          }
 
-    var albumPath = path.dirname(pathOf1Photo);
-    var valStart = albumPath.lastIndexOf('/') + 1;
-    var valEnd = albumPath.length;
-    var album = albumPath.substring(valStart, valEnd);
-    return album
-  },
+          _fdb.upsert(photoObj);
 
-  returnTrue: async function() {
+        });
+      } catch (e) {
+        console.error('ERROR: ', e);
+      };
+    },
 
-    // create a new promise inside of the async function
-    let promise = new Promise((resolve, reject) => {
-      setTimeout(() => resolve('OH NOOOO'), 1000) // resolve
-    });
+    getGeoLocation: async function(albumPath) {
 
-    // wait for the promise to resolve
-    try {
-      await promise.then(function(value) {
-        return value;
-        console.log('in the promise async wait --> ', value);
-      })
-      //return result;
-    } catch (e) {
-      console.error(e)
+      try {
+        const photos = await globby(albumPath);
+        await photos.forEach(async photo => {
+          let exifData = await getExifInfo(photo);
+          if (typeof(exifData.gps) != 'undefined') {
+            let gpsLatLon = await dms2dec(exifData.gps.GPSLatitude, exifData.gps.GPSLatitudeRef, exifData.gps.GPSLongitude, exifData.gps.GPSLongitudeRef);
+            let latlng = await JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
+            let gurl = await gMapURL + latlng + '&key=' + gMapApiKey
+            let gres = await r2(gurl).json;
+            let geoAddr = await gres.results[0].formatted_address;
+            console.log('Photo: ', photo, ' ... is located here -->\n', geoAddr)
+          } else {
+            return 'Unknown Location';
+          }
+          _fdb.upsert(photo);
+        });
+      } catch (e) {
+        console.error('ERROR: ', e);
+      }
     }
 
-    // console log the result (true)
+}
+
+//// Helper Functions:
+
+function getAlbumName(pathOf1Photo) {
+
+  var albumPath = path.dirname(pathOf1Photo);
+  var valStart = albumPath.lastIndexOf('/') + 1;
+  var valEnd = albumPath.length;
+  var albumName = albumPath.substring(valStart, valEnd);
+  return albumName;
+}
+
+function getExifInfo(file) {
+  return new Promise(resolve => {
+    exif.read(file)
+      .then(resolve)
+      .catch(console.log)
+  });
+}
+
+function fDateMoment(cDT) {
+
+  var chronDT;
+
+  if (!moment(cDT, 'YYYY:MM:DD HH:mm:ss').isValid()) {
+
+    const min = 100000;
+    const max = 235959;
+    var s = Math.floor(Math.random() * (max - min + 1)) + min;
+    //chronDT = '20150905_' + s
+    chronDT = '00000000_' + s;
+
+  } else {
+
+    chronDT = moment(cDT, 'YYYY:MM:DD HH:mm:ss', true).format('YYYYMMDD_HHmmss')
 
   }
+
+  return chronDT
 
 }
