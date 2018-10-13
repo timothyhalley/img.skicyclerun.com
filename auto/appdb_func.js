@@ -27,10 +27,31 @@ module.exports = {
         file: photoObj.name,
         directory: photoObj.dir,
         album: photoObj.album,
-        geoLoc: photoObj.geo,
-        datetime: photoObj.cdt
+        geoloc: photoObj.geo,
+        geodec: photoObj.geodec,
+        dtn: photoObj.dtn,
+        dtc: photoObj.cdt,
+        dtf: photoObj.fdt,
+        dtz: photoObj.dtz
       })
       .write()
+  },
+
+  dbsize: function(album) {
+
+    let size = db.get(album)
+      .size()
+      .value();
+
+    return size;
+  },
+
+  getAlbumPhotos: function(album) {
+    let photos = db.get(album).value();
+    // photos.forEach(photo => {
+    //   console.log('photo bomb: ', photo.key)
+    // })
+    return photos;
   }
 
 }

@@ -19,8 +19,8 @@ _fdb.dbInit();
 console.log('... getting all photos and album info ...');
 let globPath = baseDir + subDirPath;
 _f.getAllPhotos(globPath);
-// console.log('... getting geo location info ...');
-// _f.getGeoLocation(globPath);
+console.log('... shape photos for uploading to SkiCycleRun ...');
+_f.photoWorks();
 
 // // *** works!
 // (async () => {
