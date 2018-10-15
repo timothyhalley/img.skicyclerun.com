@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const globby = require('globby');
 const _fdb = require('./appdb_func.js');
+const _ = require('lodash')
 
 // google API
 var keyStore = JSON.parse(fs.readFileSync('./key.json'));
@@ -17,26 +18,73 @@ const gMap = require('@google/maps').createClient({
   key: gMapApiKey,
   Promise: Promise
 });
-const exif = require('fast-exif');
+const exif = require('exiftool');
 const dms2dec = require('dms2dec');
 const r2 = require("r2");
 const moment = require('moment');
-var geoTz = require('geo-tz');
+const geoTz = require('geo-tz');
 
 module.exports = {
 
-  getAllPhotos: async function(albumPath) {
+  getMetaInfo: async function(albumPath) {
+
+    let n = 0;
+    const photos = await globby(albumPath);
+
+    await photos.forEach(async photo => {
+
+      console.info(n++, ' getAllPhotos on photo: ', path.basename(photo))
+
+      let photoName = path.basename(photo);
+      let photoDir = path.dirname(photo);
+      let photoAlbum = getAlbumName(photo);
+      var photoKey = photoAlbum + '-' + photoName;
+      var pObj = null;
+
+      const photoObj = {
+        key: photoKey,
+        name: photoName,
+        dir: photoDir,
+        album: photoAlbum
+      }
+
+      fs.readFile(photo, function(err, data) {
+        if (err)
+          throw err;
+        else {
+          exif.metadata(data, function(err, metadata) {
+            if (err)
+              throw err;
+            else
+              pObj = _.merge({}, photoObj, metadata)
+              _fdb.upsert(pObj);
+          });
+        }
+      });
+
+    })
+  },
+
+  getGeoInfo: async function() {
+    
+  },
+
+  oldMetaVersion: async function(albumPath) {
 
       try {
+
+        let n = 0;
         const photos = await globby(albumPath);
         await photos.forEach(async photo => {
+
+          console.info(n++, ' getAllPhotos on photo: ', path.basename(photo))
 
           let photoName = path.basename(photo);
           let photoDir = path.dirname(photo);
           let photoAlbum = getAlbumName(photo);
           var photoKey = photoAlbum + '-' + photoName;
 
-          let photoObj = {
+          const photoObj = {
             key: photoKey,
             name: photoName,
             dir: photoDir,
@@ -45,51 +93,57 @@ module.exports = {
               location: null,
               dec: null,
               lat: null,
-              lon: null
+              lon: null,
+              gmt: null,
+              alt: null
             },
             dateinfo: {
-              cdt: null,
-              cronorder: null,
-              easyread: null,
-              timezone: null
+              dt: null,
+              dto: null,
+              dtz: null,
+              tz: null,
             }
           };
 
           let exifData = await getExifInfo(photo);
-          console.log('EXIF Data check: ', exifData);
-          // if (typeof(exifData.gps) != 'undefined') {
-          //   let gpsLatLon = await dms2dec(exifData.gps.GPSLatitude, exifData.gps.GPSLatitudeRef, exifData.gps.GPSLongitude, exifData.gps.GPSLongitudeRef);
-          //   let latlng = await JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
-          //   let gurl = await gMapURL + latlng + '&key=' + gMapApiKey
-          //   let gres = await r2(gurl).json;
-          //
-          //   photoObj.geoinfo.location = await gres.results[0].formatted_address;
-          //   photoObj.geoinfo.dec = latlng;
-          //   photoObj.geoinfo.lat = JSON.stringify(gpsLatLon[0]);
-          //   photoObj.geoinfo.lon = JSON.stringify(gpsLatLon[1]);
-          //   photoObj.dateinfo.timezone = geoTz(photoObj.geoinfo.lat, photoObj.geoinfo.lon);
-          //   //console.log('Photo: ', photo, ' ... is located here -->\n', photoGeo)
-          // }
-          //
-          // // setup dates for WM & cron order
-          // if (typeof(exifData.exif) != 'undefined') {
-          //   photoObj.dtc = exifData.exif.DateTimeOriginal;
-          //
-          //   photoObj.dtz = geoTz(photoObj.geo);
-          //   photoObj.dtf = moment(photoObj.dtc).format("dddd, MMMM do YYYY, h:mm:ss a");
-          //   photoObj.dtn = fDateMoment(photoObj.dtc);
-          //   if (photoObj.dtn == 'Invalid date') {
-          //     photoObj.dtn = '00000000_0000' + fRandomNumber(1, 100).toString();
-          //   };
-          // };
+
+          // setup dates for WM & cron order
+          if (typeof(exifData.exif) != 'undefined') {
+            photoObj.dateinfo.dto = exifData.exif.DateTimeOriginal;
+
+            photoObj.dateinfo.dt = moment(photoObj.dateinfo.dto).format("dddd, MMMM do YYYY, h:mm:ss a");
+            photoObj.dateinfo.dtz = fDateMoment(photoObj.dateinfo.dto);
+            if (photoObj.dateinfo.dtz == 'Invalid date') {
+              photoObj.dateinfo.dtz = '00000000_0000' + fRandomNumber(1, 100).toString();
+            };
+          };
+
+          // Get GPS info if exist
+          if (typeof(exifData.gps) != 'undefined') {
+            let gpsLatLon = await dms2dec(exifData.gps.GPSLatitude, exifData.gps.GPSLatitudeRef, exifData.gps.GPSLongitude, exifData.gps.GPSLongitudeRef);
+            let latlng = await JSON.stringify(gpsLatLon[0]) + ', ' + JSON.stringify(gpsLatLon[1]);
+            let gurl = await gMapURL + latlng + '&key=' + gMapApiKey
+            let gres = await r2(gurl).json;
+
+            photoObj.geoinfo.location = await gres.results[0].formatted_address;
+            photoObj.geoinfo.dec = latlng;
+            photoObj.geoinfo.lat = JSON.stringify(gpsLatLon[0]);
+            photoObj.geoinfo.lon = JSON.stringify(gpsLatLon[1]);
+            photoObj.geoinfo.alt = exifData.gps.GPSAltitude;
+            photoObj.geoinfo.gmt = exifData.gps.GPSTimeStamp;
+
+            photoObj.dateinfo.tz = geoTz(photoObj.geoinfo.lat, photoObj.geoinfo.lon);
+                //console.log('Photo: ', photo, ' ... is located here -->\n', photoGeo)
+          }
 
           console.log('object check: ', photoObj);
-          // _fdb.upsert(photoObj);
+          _fdb.upsert(photoObj);
 
         });
       } catch (e) {
         console.error('ERROR: ', e);
       };
+
     },
 
     photoWorks: async function() {

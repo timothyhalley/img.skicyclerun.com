@@ -14,13 +14,15 @@ const baseDir = '../../../skicyclerun/PhotoLib/';
 const subDirPath = 'albums/**/'
 const imgItems = '*.{heic,jpg,jpeg,gif,png,HEIC,JPG,JPEG,GIF,PNG}';
 
+
 _fdb.dbInit();
-//
+// //
 console.log('... getting all photos and album info ...');
 let globPath = baseDir + subDirPath;
-_f.getAllPhotos(globPath);
-console.log('... shape photos for uploading to SkiCycleRun ...');
+_f.getMetaInfo(globPath)
 _f.photoWorks();
+// console.log('... shape photos for uploading to SkiCycleRun ...');
+//_f.photoWorks();
 
 // // *** works!
 // (async () => {

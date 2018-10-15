@@ -7,6 +7,7 @@ const FileSync = require('lowdb/adapters/FileSync')
 const adapter = new FileSync('db.json')
 const db = low(adapter)
 
+
 // Node core:
 const path = require('path');
 
@@ -20,20 +21,21 @@ module.exports = {
   },
 
   upsert: function(photoObj) {
-
+    //console.log('adding photoobj to JSON', photoObj)
     db.get('photos')
-      .upsert({
-        key: photoObj.key,
-        file: photoObj.name,
-        directory: photoObj.dir,
-        album: photoObj.album,
-        geoloc: photoObj.geo,
-        geodec: photoObj.geodec,
-        dtn: photoObj.dtn,
-        dtc: photoObj.cdt,
-        dtf: photoObj.fdt,
-        dtz: photoObj.dtz
-      })
+      .upsert(photoObj)
+      // .upsert({
+      //   key: photoObj.key,
+      //   file: photoObj.name,
+      //   directory: photoObj.dir,
+      //   album: photoObj.album,
+      //   geoloc: photoObj.geo,
+      //   geodec: photoObj.geodec,
+      //   dtn: photoObj.dateinfo.dtn,
+      //   dtc: photoObj.dateinfo.cdt,
+      //   dtf: photoObj.dateinfo.fdt,
+      //   dtz: photoObj.dateinfo.dtz
+      // })
       .write()
   },
 

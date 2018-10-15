@@ -11,9 +11,11 @@
   "devDependencies": {
     "@google/maps": "^0.5.5",
     "dms2dec": "^1.1.0",
+    "exiftool": "0.0.3",
     "fast-exif": "^1.0.1",
     "geo-tz": "^4.0.2",
     "globby": "^8.0.1",
+    "lodash": "^4.17.11",
     "lowdb": "^1.0.0",
     "moment": "^2.22.2",
     "r2": "^2.0.1",
