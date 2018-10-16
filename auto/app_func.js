@@ -28,48 +28,64 @@ module.exports = {
 
   getMetaInfo: async function(albumPath) {
 
-    let n = 0;
-    const photos = await globby(albumPath);
+      let n = 0;
+      const photos = await globby(albumPath);
 
-    await photos.forEach(async photo => {
+      await photos.forEach(async photo => {
 
-      console.info(n++, ' getAllPhotos on photo: ', path.basename(photo))
 
-      let photoName = path.basename(photo);
-      let photoDir = path.dirname(photo);
-      let photoAlbum = getAlbumName(photo);
-      var photoKey = photoAlbum + '-' + photoName;
-      var pObj = null;
+        console.info(n++, ' getAllPhotos on photo: ', path.basename(photo))
 
-      const photoObj = {
-        key: photoKey,
-        name: photoName,
-        dir: photoDir,
-        album: photoAlbum
-      }
+        let photoName = path.basename(photo);
+        let photoDir = path.dirname(photo);
+        let photoAlbum = getAlbumName(photo);
+        var photoKey = photoAlbum + '-' + photoName;
+        var pObj = null;
 
-      fs.readFile(photo, function(err, data) {
-        if (err)
-          throw err;
-        else {
-          exif.metadata(data, function(err, metadata) {
-            if (err)
-              throw err;
-            else
-              pObj = _.merge({}, photoObj, metadata)
-              _fdb.upsert(pObj);
-          });
+        const photoObj = {
+          key: photoKey,
+          name: photoName,
+          dir: photoDir,
+          album: photoAlbum
         }
-      });
 
-    })
-  },
+        fs.readFile(photo, function(err, data) {
+          if (err)
+            throw err;
+          else {
+            exif.metadata(data, function(err, metadata) {
+              if (err)
+                throw err;
+              else
+                pObj = _.merge({}, photoObj, metadata)
+              _fdb.upsert(pObj);
+            });
+          }
+        });
+      })
+    },
 
-  getGeoInfo: async function() {
-    
-  },
+    photoWorks: async function() {
 
-  oldMetaVersion: async function(albumPath) {
+      try {
+        let thissize = _fdb.dbsize('photos');
+        console.log('this is size: ', thissize)
+        let photos = _fdb.getAlbumPhotos('photos')
+        //console.log('my photos? ', photos)
+        photos.forEach(photo => {
+          console.log('calling photo bomb: ', photo.key)
+        })
+
+      } catch (e) {
+        console.error('ERROR: ', e);
+      }
+    },
+
+    getGeoInfo: async function() {
+
+    },
+
+    oldMetaVersion: async function(albumPath) {
 
       try {
 
@@ -133,7 +149,7 @@ module.exports = {
             photoObj.geoinfo.gmt = exifData.gps.GPSTimeStamp;
 
             photoObj.dateinfo.tz = geoTz(photoObj.geoinfo.lat, photoObj.geoinfo.lon);
-                //console.log('Photo: ', photo, ' ... is located here -->\n', photoGeo)
+            //console.log('Photo: ', photo, ' ... is located here -->\n', photoGeo)
           }
 
           console.log('object check: ', photoObj);
@@ -144,23 +160,6 @@ module.exports = {
         console.error('ERROR: ', e);
       };
 
-    },
-
-    photoWorks: async function() {
-
-      try {
-          let thissize = _fdb.dbsize('photos');
-          console.log('this is size: ', thissize)
-          let photos = _fdb.getAlbumPhotos('photos')
-          console.log('my photos? ', photos)
-          photos.forEach(photo => {
-            console.log('calling photo bomb: ', photo.key)
-          })
-
-        }
-      catch (e) {
-        console.error('ERROR: ', e);
-      }
     }
 
 }
