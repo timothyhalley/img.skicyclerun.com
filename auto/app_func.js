@@ -26,13 +26,17 @@ const geoTz = require('geo-tz');
 
 module.exports = {
 
+  getAlbumItems: async function(albumPath) {
+    let albumItems = await globby(albumPath);
+    return albumItems;
+  },
+
   getMetaInfo: async function(albumPath) {
 
       let n = 0;
       const photos = await globby(albumPath);
 
-      await photos.forEach(async photo => {
-
+      photos.forEach(async photo => {
 
         console.info(n++, ' getAllPhotos on photo: ', path.basename(photo))
 
@@ -49,7 +53,7 @@ module.exports = {
           album: photoAlbum
         }
 
-        fs.readFile(photo, function(err, data) {
+        await fs.readFile(photo, function(err, data) {
           if (err)
             throw err;
           else {
