@@ -60,7 +60,9 @@ module.exports = {
       //const fileData = await fse.readFile(photo);
       console.log('await file read...')
       const photoExif = await exiftool.read(photo);
-      console.log('before merge ...', photoName, 'EXIF Date: ', photoExif.CreateDate.year)
+      console.log('get exif date info...')
+      const dateObj = await getPhotoDate(photoExif);
+      console.log('before merge ...', photoName); // , 'EXIF Date: ', photoExif.GPSDateTime)
       let pObj = _.merge({}, photoObj, photoExif);
       console.log('before upsert ...', photoName)
       await _fdb.upsert(pObj);
@@ -189,6 +191,16 @@ module.exports = {
 
 //// Helper Functions:
 
+function getPhotoDate(exif) {
+  const dObj = {
+    gpsDT: exif.GPSDateStamp,
+    fileDT: photoName,
+    dir: photoDir,
+    album: photoAlbum
+  }
+
+  return dObj
+}
 function getAlbumName(pathOf1Photo) {
 
   var albumPath = path.dirname(pathOf1Photo);

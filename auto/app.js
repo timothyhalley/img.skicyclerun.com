@@ -14,7 +14,6 @@ const baseDir = '../../../skicyclerun/PhotoLib/';
 const subDirPath = 'albums/**/'
 const imgItems = '*.{heic,jpg,jpeg,gif,png,HEIC,JPG,JPEG,GIF,PNG}';
 
-
 _fdb.dbInit();
 
 console.log('... getting all photos and album info ...');
