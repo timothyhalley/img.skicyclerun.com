@@ -37,6 +37,7 @@ module.exports = {
       //   dtz: photoObj.dateinfo.dtz
       // })
       .write()
+
   },
 
   dbsize: function(album) {

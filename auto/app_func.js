@@ -5,69 +5,88 @@
 // (__)  (______)(_)\_) \___)     (____)(____)(____/
 //
 const fs = require('fs');
+const fse = require('fs-extra');
 const path = require('path');
 const globby = require('globby');
 const _fdb = require('./appdb_func.js');
-const _ = require('lodash')
+const _ = require('lodash');
+
 
 // google API
-var keyStore = JSON.parse(fs.readFileSync('./key.json'));
+const keyStore = JSON.parse(fse.readFileSync('./key.json'));
 const gMapApiKey = keyStore.googleAPI.key;
 const gMapURL = keyStore.googleAPI.url;
 const gMap = require('@google/maps').createClient({
   key: gMapApiKey,
   Promise: Promise
 });
-const exif = require('exiftool');
+
+
+//const exif = require('exiftool');
+const exiftool = require("exiftool-vendored").exiftool
 const dms2dec = require('dms2dec');
-const r2 = require("r2");
+const r2 = require('r2');
 const moment = require('moment');
 const geoTz = require('geo-tz');
 
 module.exports = {
 
-  getAlbumItems: async function(albumPath) {
-    let albumItems = await globby(albumPath);
-    return albumItems;
-  },
-
   getMetaInfo: async function(albumPath) {
 
-      let n = 0;
-      const photos = await globby(albumPath);
+    let n = 0;
 
-      photos.forEach(async photo => {
+    let exifVersion = await exiftool.version()
+    console.info('exif tool version: ', exifVersion)
+    const photos = await globby([albumPath]);
+    console.log('number of photos found: ', photos.length)
 
-        console.info(n++, ' getAllPhotos on photo: ', path.basename(photo))
+    for (let photo of photos) {
 
-        let photoName = path.basename(photo);
-        let photoDir = path.dirname(photo);
-        let photoAlbum = getAlbumName(photo);
-        var photoKey = photoAlbum + '-' + photoName;
-        var pObj = null;
+      console.info(++n, ' getAllPhotos on photo: ', path.basename(photo))
 
-        const photoObj = {
-          key: photoKey,
-          name: photoName,
-          dir: photoDir,
-          album: photoAlbum
-        }
+      let photoName = path.basename(photo);
+      let photoDir = path.dirname(photo);
+      let photoAlbum = getAlbumName(photo);
+      var photoKey = photoAlbum + '-' + photoName;
+      //var pObj = null;
 
-        await fs.readFile(photo, function(err, data) {
-          if (err)
-            throw err;
-          else {
-            exif.metadata(data, function(err, metadata) {
-              if (err)
-                throw err;
-              else
-                pObj = _.merge({}, photoObj, metadata)
-              _fdb.upsert(pObj);
-            });
-          }
-        });
-      })
-    },
+      const photoObj = {
+        key: photoKey,
+        name: photoName,
+        dir: photoDir,
+        album: photoAlbum
+      }
+
+      //const fileData = await fse.readFile(photo);
+      console.log('await file read...')
+      const photoExif = await exiftool.read(photo);
+      console.log('before merge ...', photoName)
+      let pObj = _.merge({}, photoObj, photoExif);
+      console.log('before upsert ...', photoName)
+      await _fdb.upsert(pObj);
+      console.log('done with upsert ...', photoName)
+      // await fse.readFile(photo, function(err, data) {
+      //   if (err)
+      //     throw err;
+      //   else {
+      //     exif.metadata(data, function(err, metadata) {
+      //       if (err)
+      //         throw err;
+      //       else {
+      //         pObj = _.merge({}, photoObj, metadata)
+      //         _fdb.upsert(pObj);
+      //         console.log('DB upsert done')
+      //       }
+      //
+      //     });
+      //
+      //   }
+      // });
+      //console.log('await #4', photoExif)
+    }
+    console.log('done with all photos');
+    exiftool.end();
+  },
 
     photoWorks: async function() {
 
@@ -208,3 +227,28 @@ function fDateMoment(cDT) {
   return chronDT
 
 }
+
+// *** references -->
+//     // https://medium.com/@rafaelvidaurre/truly-understanding-async-await-491dd580500e
+
+
+//
+// function doubleAfter2Seconds(x) {
+//   return new Promise(resolve => {
+//     setTimeout(() => {
+//       resolve(x * 2);
+//     }, 2000);
+//   });
+// }
+//
+// async function addAsync(x) {
+//   const a = await doubleAfter2Seconds(x);
+//   const b = await doubleAfter2Seconds(a);
+//   const c = await doubleAfter2Seconds(b);
+//   return c;
+// }
+//
+// async function cntImages(path) {
+//   const imgItems = await globby([path]);
+//   return imgItems;
+// }
