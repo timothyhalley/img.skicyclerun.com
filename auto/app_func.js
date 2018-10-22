@@ -60,7 +60,7 @@ module.exports = {
       //const fileData = await fse.readFile(photo);
       console.log('await file read...')
       const photoExif = await exiftool.read(photo);
-      console.log('before merge ...', photoName)
+      console.log('before merge ...', photoName, 'EXIF Date: ', photoExif.CreateDate.year)
       let pObj = _.merge({}, photoObj, photoExif);
       console.log('before upsert ...', photoName)
       await _fdb.upsert(pObj);

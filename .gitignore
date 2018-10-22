@@ -5,6 +5,7 @@ vendor/
 PhotoLib/
 package-lock.json
 key.json
+db.json
 
 # Compiled source #
 ###################
