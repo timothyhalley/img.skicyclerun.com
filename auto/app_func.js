@@ -62,6 +62,7 @@ module.exports = {
       const photoExif = await exiftool.read(photo);
       console.log('get exif date info...')
       const dateObj = await getPhotoDate(photoExif);
+      console.log('date OBJ: ', dateObj)
       console.log('before merge ...', photoName); // , 'EXIF Date: ', photoExif.GPSDateTime)
       let pObj = _.merge({}, photoObj, photoExif);
       console.log('before upsert ...', photoName)
@@ -194,9 +195,9 @@ module.exports = {
 function getPhotoDate(exif) {
   const dObj = {
     gpsDT: exif.GPSDateStamp,
-    fileDT: photoName,
-    dir: photoDir,
-    album: photoAlbum
+    fileDT: exif.CreateDate,
+    fileCD: exif.DateCreated,
+    fileCT: exif.TimeCreated
   }
 
   return dObj
