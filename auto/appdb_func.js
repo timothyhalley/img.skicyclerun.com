@@ -24,18 +24,6 @@ module.exports = {
     //console.log('adding photoobj to JSON', photoObj)
     db.get('photos')
       .upsert(photoObj)
-      // .upsert({
-      //   key: photoObj.key,
-      //   file: photoObj.name,
-      //   directory: photoObj.dir,
-      //   album: photoObj.album,
-      //   geoloc: photoObj.geo,
-      //   geodec: photoObj.geodec,
-      //   dtn: photoObj.dateinfo.dtn,
-      //   dtc: photoObj.dateinfo.cdt,
-      //   dtf: photoObj.dateinfo.fdt,
-      //   dtz: photoObj.dateinfo.dtz
-      // })
       .write()
 
   },
@@ -55,9 +43,20 @@ module.exports = {
     //   console.log('photo bomb: ', photo.key)
     // })
     return photos;
+  },
+
+  getPhotoDate: function(photoKey, dateType) {
+
+    const fullKey = 'photos.' + photoKey;
+    let photo = db.get(photoKey).value();
+    console.log('WHAT IS THIS --> ', fullKey)
+    // for (let item of photo) {
+    //   console.log('photo key: ', item)
+    // }
   }
 
 }
+
 //LowDB lodash function library:
 db._.mixin({
   upsert: function(collection, obj, key) {

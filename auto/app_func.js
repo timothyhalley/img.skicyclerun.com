@@ -60,14 +60,17 @@ module.exports = {
       //const fileData = await fse.readFile(photo);
       console.log('await file read...')
       const photoExif = await exiftool.read(photo);
-      console.log('get exif date info...')
-      const dateObj = await getPhotoDate(photoExif);
-      console.log('date OBJ: ', dateObj)
+      // //console.log('working on: \n', photoExif, '\n\n')
+      // const dateObj = await getPhotoDate(photoExif);
+      // //console.log('date OBJ: ', dateObj)
       console.log('before merge ...', photoName); // , 'EXIF Date: ', photoExif.GPSDateTime)
       let pObj = _.merge({}, photoObj, photoExif);
       console.log('before upsert ...', photoName)
       await _fdb.upsert(pObj);
-      console.log('done with upsert ...', photoName)
+      console.log('done with upsert ...', photoName);
+      console.log('this is the key I want: ', photoObj.key)
+      await _fdb.getPhotoDate(photoObj.key, 'unk');
+
       // await fse.readFile(photo, function(err, data) {
       //   if (err)
       //     throw err;
@@ -193,13 +196,17 @@ module.exports = {
 //// Helper Functions:
 
 function getPhotoDate(exif) {
+
+  //console.log('object KEYS ', Object.keys(exif));
+  console.log('object VALUE', Object.values(exif.DateTimeOriginal))
+
   const dObj = {
-    gpsDT: exif.GPSDateStamp,
-    fileDT: exif.CreateDate,
-    fileCD: exif.DateCreated,
-    fileCT: exif.TimeCreated
+
+    gpsDT: moment(exif.GPSTimeStamp),
+    fileDT: moment(exif.DateTimeOriginal)
   }
 
+  console.log('here is my date obj: ', dObj)
   return dObj
 }
 function getAlbumName(pathOf1Photo) {
