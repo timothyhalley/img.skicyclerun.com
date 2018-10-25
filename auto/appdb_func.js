@@ -6,6 +6,7 @@ const low = require('lowdb')
 const FileSync = require('lowdb/adapters/FileSync')
 const adapter = new FileSync('db.json')
 const db = low(adapter)
+const _ = require('lodash');
 
 
 // Node core:
@@ -45,11 +46,28 @@ module.exports = {
     return photos;
   },
 
-  getPhotoDate: function(photoKey, dateType) {
+  getPhotoDate: function(node, element) {
 
-    const fullKey = 'photos.' + photoKey;
-    let photo = db.get(photoKey).value();
-    console.log('WHAT IS THIS --> ', fullKey)
+    const fullKey = 'photos.' + node;
+    // let photo = db.get('photos')
+    //               .find({key: node})
+    //               .value();
+    // let item = db.get('photos')
+    //               .find({key: node});
+    // let value = item.value().SubSecCreateDate;
+    let item = db.get('photos')
+                  .find({key: node})
+                  .value()
+
+    if (typeof(item) != 'undefined') {
+      //console.log('gettter --> year = ', item.year)
+      _.forIn(item, function(val, key) {
+        console.log('itemlist: ', key)
+      })
+    }
+
+
+    //console.log('WHAT IS THIS --> ', item, 'type of item is: ', typeof(item))
     // for (let item of photo) {
     //   console.log('photo key: ', item)
     // }
