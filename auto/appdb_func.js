@@ -57,12 +57,12 @@ module.exports = {
     // let value = item.value().SubSecCreateDate;
     let item = db.get('photos')
                   .find({key: node})
-                  .value()
+                  .value().DigitalCreationDate
 
     if (typeof(item) != 'undefined') {
       //console.log('gettter --> year = ', item.year)
       _.forIn(item, function(val, key) {
-        console.log('itemlist: ', key)
+        console.log('itemlist: ', key, ' ', val)
       })
     }
 

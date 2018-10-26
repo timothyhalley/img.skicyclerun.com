@@ -4,6 +4,8 @@
 // )__)  )(__)(  )  ( ( (__ (___) )(__  _)(_  ) _ <
 // (__)  (______)(_)\_) \___)     (____)(____)(____/
 //
+// --> Style Guide --> https://github.com/airbnb/javascript
+//
 const fs = require('fs');
 const fse = require('fs-extra');
 const path = require('path');
@@ -59,7 +61,7 @@ module.exports = {
 
       //const fileData = await fse.readFile(photo);
       console.log('await file read...')
-      const photoExif = await exiftool.read(photo);
+      const photoExif = await exiftool.read(photo, '-fast');
       // //console.log('working on: \n', photoExif, '\n\n')
       // const dateObj = await getPhotoDate(photoExif);
       // //console.log('date OBJ: ', dateObj)
@@ -67,9 +69,12 @@ module.exports = {
       let pObj = _.merge({}, photoObj, photoExif);
       console.log('before upsert ...', photoName)
       await _fdb.upsert(pObj);
-      console.log('done with upsert ...', photoName);
-      console.log('this is the key I want: ', photoObj.key)
-      await _fdb.getPhotoDate(photoObj.key, 'unk');
+      console.log('done with upsert ...', photoName);//, '\n', pObj);
+      _.forIn(pObj.GPSDateTime, function(val, key) {
+        console.log('itemlist: ', key, ' ', val)
+      })
+      // console.log('this is the key I want: ', photoObj.key)
+      // await _fdb.getPhotoDate(photoObj.key, 'unk');
 
       // await fse.readFile(photo, function(err, data) {
       //   if (err)
