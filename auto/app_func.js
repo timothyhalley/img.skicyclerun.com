@@ -70,9 +70,12 @@ module.exports = {
       console.log('before upsert ...', photoName)
       await _fdb.upsert(pObj);
       console.log('done with upsert ...', photoName);//, '\n', pObj);
-      _.forIn(pObj.GPSDateTime, function(val, key) {
-        console.log('itemlist: ', key, ' ', val)
-      })
+
+      // figure out this toDate() function
+      console.log('object raw: \n', pObj.DateCreated.year)
+      // _.forIn(pObj.SubSecCreateDate, function(val, key) {
+      //   console.log('itemlist: ', key, ' ', val)
+      // })
       // console.log('this is the key I want: ', photoObj.key)
       // await _fdb.getPhotoDate(photoObj.key, 'unk');
 
