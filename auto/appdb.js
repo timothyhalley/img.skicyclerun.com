@@ -1,5 +1,4 @@
 'use strict'
-const _f = require('./app_func.js');
 
 // NODE: lowDB library
 const low = require('lowdb')
