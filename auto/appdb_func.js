@@ -46,31 +46,23 @@ module.exports = {
     return photos;
   },
 
-  getPhotoDate: function(node, element) {
+  getDBNode: function(keyVal, element) {
 
-    const fullKey = 'photos.' + node;
-    // let photo = db.get('photos')
-    //               .find({key: node})
-    //               .value();
-    // let item = db.get('photos')
-    //               .find({key: node});
-    // let value = item.value().SubSecCreateDate;
+    let dbElement = null;
     let item = db.get('photos')
-                  .find({key: node})
-                  .value().DigitalCreationDate
+                  //.find({key: node})
+                  .find({key: keyVal})
+                  .value();
 
-    if (typeof(item) != 'undefined') {
-      //console.log('gettter --> year = ', item.year)
-      _.forIn(item, function(val, key) {
-        console.log('itemlist: ', key, ' ', val)
-      })
-    }
+    _.forIn(item, function(val, key) {
+      if (key == element) {
+        //console.log('found it: ', val);
+        dbElement = val;
+      }
+    })
+    //console.log('... uh no!')
+    return dbElement
 
-
-    //console.log('WHAT IS THIS --> ', item, 'type of item is: ', typeof(item))
-    // for (let item of photo) {
-    //   console.log('photo key: ', item)
-    // }
   }
 
 }
