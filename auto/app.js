@@ -1,7 +1,8 @@
 'use strict'
 // app library functions:
-const _f = require('./app_func.js');
+const _f = require('./appfunc.js');
 const _fdb = require('./appdb.js');
+const _fim = require('./appimage.js')
 
 // Node core:
 const path = require('path');
@@ -23,9 +24,9 @@ console.log('... getting all photos and album info ...');
     await _fdb.dbInit();
 
     let globPath = baseDir + subDirPath;
-    await _f.getMetaInfo(globPath);
+    //await _f.getMetaInfo(globPath);
 
-
+    await _fim.resizeImage();
 
   } catch (e) {
     console.error('ERROR: ', e);

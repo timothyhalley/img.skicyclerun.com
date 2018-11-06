@@ -1,6 +1,21 @@
 'use strict'
+
+const _fdb = require('./appdb.js');
+
 var im = require('imagemagick');
 
+module.exports = {
+
+  resizeImage: async function() {
+
+    //let photos = _fdb.getAllPhotos()
+    let albums = _fdb.getAllPhotos('Halley Family', 'album')
+    console.log('got some photos!: ', albums);
+
+
+  }
+
+}
 
 // ****************************************************************************
 // Helper Functions------------------------------------------------------------

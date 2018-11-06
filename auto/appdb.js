@@ -45,6 +45,15 @@ module.exports = {
     return photos;
   },
 
+  getAllPhotos: function(keyVal, element) {
+
+    let items = db.get('photos')
+                  //.find({key: node})
+                  .find({key: keyVal})
+                  .value();
+    return items
+  },
+
   getDBNode: function(keyVal, element) {
 
     let dbElement = null;

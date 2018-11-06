@@ -1,4 +1,3 @@
-'use strict'
 // ____  __  __  _  _   ___       __    ____  ____
 // ( ___)(  )(  )( \( ) / __) ___ (  )  (_  _)(  _ \
 // )__)  )(__)(  )  ( ( (__ (___) )(__  _)(_  ) _ <
@@ -6,11 +5,17 @@
 //
 // --> Style Guide --> https://github.com/airbnb/javascript
 //
+'use strict'
+
+// app library functions:
+const _fdb = require('./appdb.js');
+
+
 const fs = require('fs');
 const fse = require('fs-extra');
 const path = require('path');
 const globby = require('globby');
-const _fdb = require('./appdb_func.js');
+
 const _ = require('lodash');
 
 // google API
