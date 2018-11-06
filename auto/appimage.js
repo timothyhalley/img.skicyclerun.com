@@ -12,7 +12,6 @@ module.exports = {
     let albums = _fdb.getAllPhotos('Halley Family', 'album')
     console.log('got some photos!: ', albums);
 
-
   }
 
 }

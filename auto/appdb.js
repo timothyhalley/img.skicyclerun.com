@@ -49,7 +49,7 @@ module.exports = {
 
     let items = db.get('photos')
                   //.find({key: node})
-                  .find({key: keyVal})
+                  .find({album: keyVal})
                   .value();
     return items
   },
