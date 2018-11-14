@@ -2,15 +2,27 @@
 
 const _fdb = require('./appdb.js');
 
-var im = require('imagemagick');
+const gm = require('gm');
 
 module.exports = {
 
   resizeImage: async function() {
 
-    //let photos = _fdb.getAllPhotos()
-    let albums = _fdb.getAllPhotos('Halley Family', 'album')
-    console.log('got some photos!: ', albums);
+
+    let photos = _fdb.getAlbumPhotos('DeerValleySki 2013');
+    photos.forEach(photo => {
+      let newValue = calculateAspectRatioFit(photo.origWidth, photo.origHeight, 1600, 1600);
+      console.log('Directory: ', photo.directory);
+      let newPath = photo.direcotry.replace('PhotoLib', 'PhotoOut')
+      gm(photo.directory)
+        .resize(newValue.width, newValue.height)
+        .write(newPath, function (err) {
+          if (err) console.log('ERROR:', err);
+        })
+    })
+
+    // let albums = _fdb.getAllPhotos('Halley Family', 'album')
+    // console.log('got some photos!: ', albums);
 
   }
 

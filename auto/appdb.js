@@ -37,10 +37,16 @@ module.exports = {
     return size;
   },
 
-  getAlbumPhotos: function(album) {
-    let photos = db.get(album).value();
+  getAlbumPhotos: function(albumName) {
+
+    //let photos = db.get('photos')
+    let photos = db.get('photos')
+      .filter({album: albumName})
+      .sortBy('name')
+      .value()
+
     // photos.forEach(photo => {
-    //   console.log('photo bomb: ', photo.key)
+    //   console.log('photo bomb: ', photo.name)
     // })
     return photos;
   },
