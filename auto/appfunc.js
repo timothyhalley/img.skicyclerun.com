@@ -62,6 +62,7 @@ module.exports = {
           dir: path.dirname(photo),
           directory: photoExif.Directory,
           album: getAlbumName(photo),
+          circa: null,
           address0: null,
           address1: null,
           timeZone: null,
@@ -77,10 +78,20 @@ module.exports = {
 
           let gurl = gMapURL + photoExif.GPSLatitude + ', ' + photoExif.GPSLongitude + '&key=' + gMapApiKey
           let gres = await r2(gurl).json;
-          //console.log('return URL from gAPI: \n', gres.results[0].formatted_address, '\n', gres.results[1].formatted_address, '\n', gres.results[2].formatted_address)
-          photoObj.address0 = gres.results[0].formatted_address;
-          photoObj.address1 = gres.results[1].formatted_address;
-
+          //console.log('return URL from gAPI: \n', gres); //gres.results[0].formatted_address, '\n', gres.results[1].formatted_address, '\n', gres.results[2].formatted_address)
+          try {
+            if (gres != null) {
+              if (typeof gres.results[0].formatted_address !== 'undefined') {
+                photoObj.address0 = gres.results[0].formatted_address;
+              }
+              if (typeof gres.results[1].formatted_address !== 'undefined') {
+                photoObj.address1 = gres.results[1].formatted_address;
+              }
+            }
+          }
+          catch (error) {
+            console.log('Error: ', error, '\n\nURL from gAPI: \n', gres); //gres.results[0].formatted_address, '\n', gres.results[1].formatted_address, '\n', gres.results[2].formatted_address)
+          }
           photoObj.timeZone = geoTz(photoExif.GPSLatitude, photoExif.GPSLongitude);
 
           photoObj.GPSPosition = photoExif.GPSPosition;
@@ -92,7 +103,7 @@ module.exports = {
 
         // get Dates for Photo
         let dtObj = getPhotoDate(photoExif);
-        dtObj.OriginDate = getOriginDate(dtObj);
+        photoObj.circa = getOriginDate(dtObj);
 
         // Serialize obj into lowDB!
         let pObj = _.merge({}, photoObj); //, dtObj, photoExif);

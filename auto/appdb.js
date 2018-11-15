@@ -37,6 +37,17 @@ module.exports = {
     return size;
   },
 
+  getAlbums: function() {
+
+    //let photos = db.get('photos')
+    let albums = db.get('photos')
+      .sortBy('album')
+      .map('album')
+      .uniq()
+      .value()
+    return albums;
+  },
+
   getAlbumPhotos: function(albumName) {
 
     //let photos = db.get('photos')
@@ -45,9 +56,6 @@ module.exports = {
       .sortBy('name')
       .value()
 
-    // photos.forEach(photo => {
-    //   console.log('photo bomb: ', photo.name)
-    // })
     return photos;
   },
 

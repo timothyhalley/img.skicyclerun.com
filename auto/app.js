@@ -25,8 +25,8 @@ console.log('... getting all photos and album info ...');
 
     let globPath = baseDir + subDirPath;
     //await _f.getMetaInfo(globPath);
-
-    await _fim.resizeImage();
+    let albums = await _fdb.getAlbums()
+    await _fim.processAlbums(albums);
 
   } catch (e) {
     console.error('ERROR: ', e);
