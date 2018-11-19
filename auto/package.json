@@ -11,6 +11,7 @@
   "license": "ISC",
   "devDependencies": {
     "@google/maps": "^0.5.5",
+    "@jimp/plugin-circle": "^0.5.4",
     "dms2dec": "^1.1.0",
     "exiftool": "0.0.3",
     "exiftool-vendored": "^6.3.0",
@@ -18,7 +19,7 @@
     "fs-extra": "^7.0.0",
     "geo-tz": "^4.0.2",
     "globby": "^8.0.1",
-    "gm": "^1.23.1",
+    "jimp": "^0.5.6",
     "lodash": "^4.17.11",
     "lowdb": "^1.0.0",
     "moment": "^2.22.2",
