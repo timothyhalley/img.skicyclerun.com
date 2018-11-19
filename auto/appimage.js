@@ -38,46 +38,58 @@ async function smashImages(album) {
       let photoOut = photoPath.replace('PhotoLib', 'PhotoOut');
       let photoResize = photoOut.replace('albums', 'resized');
       let photoSepia = photoOut.replace('albums', 'sepia');
-      let photoText = photoOut.replace('albums', 'watermark');
+      let photoWM = photoOut.replace('albums', 'watermark');
+      let font = jimp.loadFont(jimp.FONT_SANS_128_BLACK);
+      let maxFontWidth = 800;
+      let maxFontHeight = 500;
+
+      let wmText = waterMark(photo);
+      let wmWidth = 100;
+      let wmHeight = 100;
+      // wmWidth = jimp.measureText(jimp.FONT_SANS_32_BLACK, wmText) // width of text
+      //console.log('TEXT height --> ', jimp.measureTextHeight(jimp.FONT_SANS_32_BLACK, wmText, 100))   // height of text
+
+
       //await fse.ensureDir(path.dirname(photoOut));
 
       await jimp.read(photoPath)
-        .then(image => {
-          return image
-            .resize(newValue.width, newValue.height) // resize
-            .quality(100) // set JPEG quality
-            .write(photoResize); // save
+        .then(image => (
+            jimp.loadFont(jimp.FONT_SANS_32_WHITE).then(font => ([image, font]))
+          ))
+        .then(data => {
+
+            let image = data[0];
+            let font = data[1];
+
+            return image
+              .print(font, 100, newValue.height - 100, {
+                text: wmText,
+                alignmentX: jimp.HORIZONTAL_ALIGN_LEFT,
+                alignmentY: jimp.VERTICAL_ALIGN_BOTTOM},
+                maxFontWidth,
+                maxFontHeight)
+              .write(photoWM);
         })
-        .then(image => {
-          return image
-            .sepia()
-            .write(photoSepia);
-        })
-        .then(image => {
-          return image
-          jimp.loadFont(Jimp.FONT_SANS_32_WHITE)
-            .then(font => {
-              image.print(
-                font,
-                x,
-                y, {
-                  text: 'Hello world!',
-                  alignmentX: jimp.HORIZONTAL_ALIGN_CENTER,
-                  alignmentY: jimp.VERTICAL_ALIGN_MIDDLE
-                },
-                maxWidth,
-                maxHeight
-              );
-            });
-          .write(photoText);
-        })
-        .catch(err => {
-          console.error(err);
-        });
-    } else {
-      console.warn('WARNING: file does not exist')
-    }
+    .then(image => {
+        return image
+          .resize(newValue.width, newValue.height) // resize
+          .quality(100) // set JPEG quality
+          .write(photoResize); // save
+      })
+      .then(image => {
+        return image
+          .sepia()
+          .write(photoSepia);
+      })
+      .catch(err => {
+        console.error(err);
+      });
+
+
+  } else {
+    console.warn('WARNING: PHOTO does not exist - reported by db.JSON (purge db.JSON - rerun app!)')
   }
+}
 }
 
 async function resizeImage(album) {
@@ -111,15 +123,15 @@ function waterMark(photo) {
   let wm = photo.album
 
   if (photo.circa != null) {
-    wm = wm + '\n' + photo.circa;
+    wm = wm + '\r\n' + photo.circa;
   }
 
   if (photo.address0 != null) {
-    wm = wm + '\n' + photo.address0;
+    wm = wm + '\r\n' + photo.address0;
   }
 
   if (photo.GPSPosition != null) {
-    wm = wm + '\n' + photo.GPSPosition;
+    wm = wm + '\r\n' + photo.GPSPosition;
   }
 
 
