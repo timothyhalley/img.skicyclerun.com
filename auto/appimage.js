@@ -4,21 +4,21 @@
 
 const _fdb = require('./appdb.js');
 
-
-var jimp = require('jimp');
-const fs = require('fs')
+const fs = require('fs');
 const fse = require('fs-extra');
+const jimp = require('jimp');
 const path = require('path');
+
+const COPYRIGHT = "© https://skicyclerun.com ©";
 
 module.exports = {
 
   processAlbums: async function(albums) {
 
-    albums.forEach(album => {
+    for (let album of albums) {
       console.log('Processing album: ', album)
-      smashImages(album);
-    })
-
+      await smashImages(album);
+    }
   }
 }
 
@@ -39,57 +39,62 @@ async function smashImages(album) {
       let photoResize = photoOut.replace('albums', 'resized');
       let photoSepia = photoOut.replace('albums', 'sepia');
       let photoWM = photoOut.replace('albums', 'watermark');
-      let font = jimp.loadFont(jimp.FONT_SANS_128_BLACK);
-      let maxFontWidth = 800;
-      let maxFontHeight = 500;
+      let setLegendVertRows = null;
 
-      let wmText = waterMark(photo);
-      let wmWidth = 100;
-      let wmHeight = 100;
-      // wmWidth = jimp.measureText(jimp.FONT_SANS_32_BLACK, wmText) // width of text
-      //console.log('TEXT height --> ', jimp.measureTextHeight(jimp.FONT_SANS_32_BLACK, wmText, 100))   // height of text
+      try {
+        await jimp.loadFont(jimp.FONT_SANS_32_WHITE).then(font => {
+          let wmTextWidth = jimp.measureText(font, COPYRIGHT)
+          let wmTextHeight = jimp.measureTextHeight(font, COPYRIGHT)
+          setLegendVertRows = [newValue.height - wmTextHeight * 4,  newValue.height - wmTextHeight * 3, newValue.height - wmTextHeight * 2, newValue.height - wmTextHeight * 1];
+        })
 
+        await jimp.read(photoPath)
 
-      //await fse.ensureDir(path.dirname(photoOut));
+          .then(image => (image.clone()
+            .resize(newValue.width, newValue.height) // resize
+          ))
 
-      await jimp.read(photoPath)
-        .then(image => (
+          .then(image => (
             jimp.loadFont(jimp.FONT_SANS_32_WHITE).then(font => ([image, font]))
           ))
-        .then(data => {
+
+          .then(data => {
 
             let image = data[0];
             let font = data[1];
 
             return image
-              .print(font, 100, newValue.height - 100, {
-                text: wmText,
-                alignmentX: jimp.HORIZONTAL_ALIGN_LEFT,
-                alignmentY: jimp.VERTICAL_ALIGN_BOTTOM},
-                maxFontWidth,
-                maxFontHeight)
-              .write(photoWM);
-        })
-    .then(image => {
-        return image
-          .resize(newValue.width, newValue.height) // resize
-          .quality(100) // set JPEG quality
-          .write(photoResize); // save
-      })
-      .then(image => {
-        return image
-          .sepia()
-          .write(photoSepia);
-      })
-      .catch(err => {
-        console.error(err);
-      });
+              .print(font, 10, 10, COPYRIGHT)
+              .print(font, 10, setLegendVertRows[0], setValue(photo.album))
+              .print(font, 10, setLegendVertRows[1], setValue(photo.circa))
+              .print(font, 10, setLegendVertRows[2], setValue(photo.address0))
+              .print(font, 10, setLegendVertRows[3], setValue(photo.GPSPosition))
+          })
 
+          .then(image => {
+            return image
+              .quality(95)
+              .write(photoResize)
+          })
 
-  } else {
-    console.warn('WARNING: PHOTO does not exist - reported by db.JSON (purge db.JSON - rerun app!)')
+          .then(image => {
+            return image
+              .sepia()
+              .write(photoSepia);
+          })
+
+          .catch(err => {
+            console.error(err);
+          });
+
+      } catch (e) {
+        console.log('Found larger problem: ', e)
+      }
+
+    } else {
+      console.warn('WARNING: PHOTO does not exist - reported by db.JSON (purge db.JSON - rerun app!)')
+    }
   }
-}
 }
 
 async function resizeImage(album) {
@@ -102,7 +107,7 @@ async function resizeImage(album) {
 
     let photoPath = path.join(photo.directory, photo.name);
     let photoOut = photoPath.replace('PhotoLib', 'PhotoOut');
-    await fse.ensureDir(path.dirname(photoOut));
+    //await fse.ensureDir(path.dirname(photoOut));
 
     jimp.read(photoPath)
       .then(image => {
@@ -137,6 +142,15 @@ function waterMark(photo) {
 
   return wm;
 }
+function  setValue(item) {
+  let val = null;
+  if (item == null) {
+    val = ' ';
+  } else {
+    val = item;
+  }
+  return val;
+}
 
 function calculateAspectRatioFit(srcWidth, srcHeight, maxWidth, maxHeight) {
 
@@ -160,19 +174,21 @@ function calculateAspectRatioFit(srcWidth, srcHeight, maxWidth, maxHeight) {
 // const gm = require('gm');
 // const sharp = require('sharp');
 
-// await gm(photoPath)
+// --> GM version working:
+// fse.ensureDir(path.dirname(photoOut));
+// const image = gm(photoPath)
+// image
 //   .resize(newValue.width, newValue.height)
 //   .quality(100)
-//   .font("Ravie")
-//   .fontSize(32)
+//   .font("Chalkduster")
+//   .fontSize(48)
 //   .stroke("Blue", 1)
 //   .fill("Gold")
 //   //.gravity("NorthWest") //NorthWest|North|NorthEast|West|Center|East|SouthWest|South|SouthEast
 //   .drawText(100, 100, "© https://skicyclerun.com ©", "NorthWest")
-//
 //   .fontSize(18)
 //   .drawText(100, 100, waterMark(photo), "SouthEast")
-//   .writeAsync(photoOut, function (err) {
+//   .write(photoOut, function(err) {
 //     if (err) console.log('ERROR:', err);
 //   })
 
@@ -187,4 +203,52 @@ function calculateAspectRatioFit(srcWidth, srcHeight, maxWidth, maxHeight) {
 //   })
 //   .catch(err => {
 //     console.log(err);
+//   });
+
+//* JIMP -->
+// let maxFontWidth = 500;
+// let maxFontHeight = 500;
+//
+// let wmTextHeight = 0;
+// let wmWidth = 100;
+// let wmHeight = 100;
+// // wmWidth = jimp.measureText(jimp.FONT_SANS_32_BLACK, wmText) // width of text
+// await jimp.loadFont(jimp.FONT_SANS_32_WHITE).then(font => {
+//   //console.log(jimp.measureTextHeight(font, wmText, 100))
+//   wmTextHeight = jimp.measureTextHeight(font, wmText, 25)
+// });
+// let vertText = newValue.height - wmTextHeight;
+//
+// await jimp.read(photoPath)
+//   .then(image => (
+//     jimp.loadFont(jimp.FONT_SANS_32_WHITE).then(font => ([image, font]))
+//   ))
+//   .then(data => {
+//
+//     let image = data[0];
+//     let font = data[1];
+//
+//     return image
+//       .print(font, 25, vertText, {
+//           text: wmText,
+//           alignmentX: jimp.HORIZONTAL_ALIGN_LEFT,
+//           alignmentY: jimp.VERTICAL_ALIGN_BOTTOM
+//         },
+//         maxFontWidth,
+//         maxFontHeight)
+//       .write(photoWM);
+//   })
+//   .then(image => {
+//     return image
+//       .resize(newValue.width, newValue.height) // resize
+//       .quality(100) // set JPEG quality
+//       .write(photoResize); // save
+//   })
+//   .then(image => {
+//     return image
+//       .sepia()
+//       .write(photoSepia);
+//   })
+//   .catch(err => {
+//     console.error(err);
 //   });

@@ -57,11 +57,14 @@ module.exports = {
         let photoKey = photoAlbum + '-' + photoName;
 
         const photoObj = {
+          album: getAlbumName(photo),
           key: _.camelCase(getAlbumName(photo) + path.basename(photo)),
           name: path.basename(photo),
+          ext: path.extname(photo),
+          type: photoExif.FileType,
+          mime: photoExif.MIMEType,
           dir: path.dirname(photo),
           directory: photoExif.Directory,
-          album: getAlbumName(photo),
           circa: null,
           address0: null,
           address1: null,
@@ -74,6 +77,7 @@ module.exports = {
         }
 
         // Get GPS info if exist
+        // console.log('EXIF Data: \n', photoExif) //DUMP EXIF INFO TO CONSOLE!
         if (typeof(photoExif.GPSPosition) != 'undefined') {
 
           let gurl = gMapURL + photoExif.GPSLatitude + ', ' + photoExif.GPSLongitude + '&key=' + gMapApiKey

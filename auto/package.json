@@ -15,7 +15,6 @@
   "license": "ISC",
   "devDependencies": {
     "@google/maps": "^0.5.5",
-    "@jimp/plugin-circle": "^0.5.4",
     "dms2dec": "^1.1.0",
     "exiftool": "0.0.3",
     "exiftool-vendored": "^6.3.0",

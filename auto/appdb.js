@@ -52,7 +52,7 @@ module.exports = {
 
     //let photos = db.get('photos')
     let photos = db.get('photos')
-      .filter({album: albumName})
+      .filter({album: albumName, type: 'JPEG'})
       .sortBy('name')
       .value()
 
