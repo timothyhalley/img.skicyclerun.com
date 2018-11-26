@@ -81,7 +81,7 @@ module.exports = {
       if (addPhoto) {
 
         // Get GPS info if exist
-        // console.log('EXIF Data: \n', photoExif) //DUMP EXIF INFO TO CONSOLE!
+        console.log('EXIF Data: \n', photoExif) //DUMP EXIF INFO TO CONSOLE!
         if (typeof(photoExif.GPSPosition) != 'undefined') {
 
           let gurl = gMapURL + photoExif.GPSLatitude + ', ' + photoExif.GPSLongitude + '&key=' + gMapApiKey
