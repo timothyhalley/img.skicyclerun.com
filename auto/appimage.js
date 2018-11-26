@@ -42,11 +42,18 @@ async function smashImages(album) {
       let setLegendVertRows = null;
 
       try {
+
         await jimp.loadFont(jimp.FONT_SANS_32_WHITE).then(font => {
+          let wmTextWidth = jimp.measureText(font, COPYRIGHT)
+          let wmTextHeight = jimp.measureTextHeight(font, COPYRIGHT)
+        })
+
+        await jimp.loadFont(jimp.FONT_SANS_16_BLACK).then(font => {
           let wmTextWidth = jimp.measureText(font, COPYRIGHT)
           let wmTextHeight = jimp.measureTextHeight(font, COPYRIGHT)
           setLegendVertRows = [newValue.height - wmTextHeight * 4,  newValue.height - wmTextHeight * 3, newValue.height - wmTextHeight * 2, newValue.height - wmTextHeight * 1];
         })
+
 
         await jimp.read(photoPath)
 
@@ -65,6 +72,18 @@ async function smashImages(album) {
 
             return image
               .print(font, 10, 10, COPYRIGHT)
+          })
+
+          .then(image => (
+            jimp.loadFont(jimp.FONT_SANS_16_BLACK).then(font => ([image, font]))
+          ))
+
+          .then(data => {
+
+            let image = data[0];
+            let font = data[1];
+
+            return image
               .print(font, 10, setLegendVertRows[0], setValue(photo.album))
               .print(font, 10, setLegendVertRows[1], setValue(photo.circa))
               .print(font, 10, setLegendVertRows[2], setValue(photo.address0))

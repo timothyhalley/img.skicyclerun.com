@@ -37,44 +37,48 @@ module.exports = {
 
   getMetaInfo: async function(albumPath) {
 
-      let n = 0;
+    let n = 0;
 
-      let exifVersion = await exiftool.version()
-      console.info('exif tool version: ', exifVersion)
-      const photos = await globby([albumPath]);
-      console.log('number of photos found: ', photos.length)
+    let exifVersion = await exiftool.version()
+    console.info('exif tool version: ', exifVersion)
+    const photos = await globby([albumPath]);
+    console.log('number of photos found: ', photos.length)
 
-      for (let photo of photos) {
+    for (let photo of photos) {
 
-        console.info(++n, ' getAllPhotos on photo: ', path.basename(photo))
+      console.info(++n, ' photo: ', path.basename(photo))
 
-        // Get all PHOTO EXIF DATA
-        const photoExif = await exiftool.read(photo, '-fast');
+      // Get all PHOTO EXIF DATA
+      const photoExif = await exiftool.read(photo, '-fast');
 
-        let photoName = path.basename(photo);
-        let photoDir = path.dirname(photo);
-        let photoAlbum = getAlbumName(photo);
-        let photoKey = photoAlbum + '-' + photoName;
+      let photoName = path.basename(photo);
+      let photoDir = path.dirname(photo);
+      let photoAlbum = getAlbumName(photo);
+      let photoKey = photoAlbum + '-' + photoName;
 
-        const photoObj = {
-          album: getAlbumName(photo),
-          key: _.camelCase(getAlbumName(photo) + path.basename(photo)),
-          name: path.basename(photo),
-          ext: path.extname(photo),
-          type: photoExif.FileType,
-          mime: photoExif.MIMEType,
-          dir: path.dirname(photo),
-          directory: photoExif.Directory,
-          circa: null,
-          address0: null,
-          address1: null,
-          timeZone: null,
-          GPSPosition: null,
-          origSize: photoExif.ImageSize,
-          origWidth: photoExif.ImageWidth,
-          origHeight: photoExif.ImageHeight,
-          origBtyes: photoExif.FileSize
-        }
+      const photoObj = {
+        album: getAlbumName(photo),
+        key: _.camelCase(getAlbumName(photo) + path.basename(photo)),
+        name: path.basename(photo),
+        ext: path.extname(photo),
+        type: photoExif.FileType,
+        mime: photoExif.MIMEType,
+        dir: path.dirname(photo),
+        directory: photoExif.Directory,
+        circa: null,
+        address0: null,
+        address1: null,
+        timeZone: null,
+        GPSPosition: null,
+        origSize: photoExif.ImageSize,
+        origWidth: photoExif.ImageWidth,
+        origHeight: photoExif.ImageHeight,
+        origBtyes: photoExif.FileSize
+      }
+
+      // insert check if already exist in DB.JSON
+      let addPhoto = _fdb.photoExist(photoObj.key);
+      if (addPhoto) {
 
         // Get GPS info if exist
         // console.log('EXIF Data: \n', photoExif) //DUMP EXIF INFO TO CONSOLE!
@@ -92,8 +96,7 @@ module.exports = {
                 photoObj.address1 = gres.results[1].formatted_address;
               }
             }
-          }
-          catch (error) {
+          } catch (error) {
             console.log('Error: ', error, '\n\nURL from gAPI: \n', gres); //gres.results[0].formatted_address, '\n', gres.results[1].formatted_address, '\n', gres.results[2].formatted_address)
           }
           photoObj.timeZone = geoTz(photoExif.GPSLatitude, photoExif.GPSLongitude);
@@ -115,9 +118,11 @@ module.exports = {
 
       }
 
-      console.log('done with all photos');
-      exiftool.end();
     }
+
+    console.log('done with all photos');
+    exiftool.end();
+  }
 
 }
 

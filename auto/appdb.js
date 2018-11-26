@@ -37,6 +37,15 @@ module.exports = {
     return size;
   },
 
+  photoExist: function(photoKey) {
+
+    let photoData = db.get('photos')
+      .filter({key: photoKey})
+      .value()
+
+    return _.isEmpty(photoData);
+  },
+
   getAlbums: function() {
 
     //let photos = db.get('photos')
@@ -50,7 +59,6 @@ module.exports = {
 
   getAlbumPhotos: function(albumName) {
 
-    //let photos = db.get('photos')
     let photos = db.get('photos')
       .filter({album: albumName, type: 'JPEG'})
       .sortBy('name')
