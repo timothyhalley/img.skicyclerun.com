@@ -23,7 +23,7 @@ console.log('... getting all photos and album info ...');
 
     await _fdb.dbInit();
 
-    let globPath = baseDir + subDirPath;
+    let globPath = baseDir + subDirPath + imgItems;
     await _f.getMetaInfo(globPath);
     let albums = await _fdb.getAlbums()
     await _fim.processAlbums(albums);

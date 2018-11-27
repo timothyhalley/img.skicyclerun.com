@@ -8,6 +8,7 @@ const fs = require('fs');
 const fse = require('fs-extra');
 const jimp = require('jimp');
 const path = require('path');
+const _ = require('lodash');
 
 const COPYRIGHT = "© https://skicyclerun.com ©";
 
@@ -35,10 +36,12 @@ async function smashImages(album) {
       let newValue = calculateAspectRatioFit(photo.origWidth, photo.origHeight, 1600, 1600);
       console.log('Processing Photo: ', photo.album, ' --> ', photo.name);
 
+      let photoPathOut = path.join(photoPath.substring(0, photoPath.indexOf('albums') + 6), _.camelCase(photo.album))
+      // WORK IN THIS TODO!
+      console.debug('photo Path --> ', photoPathOut)
+
       let photoOut = photoPath.replace('PhotoLib', 'PhotoOut');
-      let photoResize = photoOut.replace('albums', 'resized');
-      let photoSepia = photoOut.replace('albums', 'sepia');
-      let photoWM = photoOut.replace('albums', 'watermark');
+
       let setLegendVertRows = null;
 
       try {
@@ -53,7 +56,6 @@ async function smashImages(album) {
           let wmTextHeight = jimp.measureTextHeight(font, COPYRIGHT)
           setLegendVertRows = [newValue.height - wmTextHeight * 4,  newValue.height - wmTextHeight * 3, newValue.height - wmTextHeight * 2, newValue.height - wmTextHeight * 1];
         })
-
 
         await jimp.read(photoPath)
 
@@ -93,13 +95,31 @@ async function smashImages(album) {
           .then(image => {
             return image
               .quality(95)
-              .write(photoResize)
+              .write(photoOut.replace('albums', 'resized'))
           })
 
           .then(image => {
             return image
               .sepia()
-              .write(photoSepia);
+              .write(photoOut.replace('albums', 'sepia'));
+          })
+
+          .then(image => {
+            return image
+              .greyscale()
+              .write(photoOut.replace('albums', 'greyscale'));
+          })
+
+          .then(image => {
+            return image
+              .convolute([[-2, -1, 0], [-1, 1, 1], [0, 1, 2]])
+              .write(photoOut.replace('albums', 'emboss'));
+          })
+
+          .then(image => {
+            return image
+              .posterize(4)
+              .write(photoOut.replace('albums', 'posterize'));
           })
 
           .catch(err => {
