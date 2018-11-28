@@ -31,16 +31,10 @@ async function smashImages(album) {
 
   for (let photo of photos) {
     //console.log('does file exist? ', fs.existsSync(photo), '\n', photo )
-    let photoPath = path.join(photo.directory, photo.name);
-    if (fs.existsSync(photoPath)) {
+    let photoPathIn = path.join(photo.directory, photo.name);
+    if (fs.existsSync(photoPathIn)) {
       let newValue = calculateAspectRatioFit(photo.origWidth, photo.origHeight, 1600, 1600);
       console.log('Processing Photo: ', photo.album, ' --> ', photo.name);
-
-      let photoPathOut = path.join(photoPath.substring(0, photoPath.indexOf('albums') + 6), _.camelCase(photo.album))
-      // WORK IN THIS TODO!
-      console.debug('photo Path --> ', photoPathOut)
-
-      let photoOut = photoPath.replace('PhotoLib', 'PhotoOut');
 
       let setLegendVertRows = null;
 
@@ -57,7 +51,7 @@ async function smashImages(album) {
           setLegendVertRows = [newValue.height - wmTextHeight * 4,  newValue.height - wmTextHeight * 3, newValue.height - wmTextHeight * 2, newValue.height - wmTextHeight * 1];
         })
 
-        await jimp.read(photoPath)
+        await jimp.read(photoPathIn)
 
           .then(image => (image.clone()
             .resize(newValue.width, newValue.height) // resize
@@ -95,31 +89,31 @@ async function smashImages(album) {
           .then(image => {
             return image
               .quality(95)
-              .write(photoOut.replace('albums', 'resized'))
+              .write(setPhotoPathOut(photoPathIn, '_A1'))
           })
 
           .then(image => {
             return image
               .sepia()
-              .write(photoOut.replace('albums', 'sepia'));
+              .write(setPhotoPathOut(photoPathIn, '_SP'));
           })
 
           .then(image => {
             return image
               .greyscale()
-              .write(photoOut.replace('albums', 'greyscale'));
+              .write(setPhotoPathOut(photoPathIn, '_GR'));
           })
 
           .then(image => {
             return image
               .convolute([[-2, -1, 0], [-1, 1, 1], [0, 1, 2]])
-              .write(photoOut.replace('albums', 'emboss'));
+              .write(setPhotoPathOut(photoPathIn, '_EB'));
           })
 
           .then(image => {
             return image
               .posterize(4)
-              .write(photoOut.replace('albums', 'posterize'));
+              .write(setPhotoPathOut(photoPathIn, '_PZ'));
           })
 
           .catch(err => {
@@ -136,30 +130,23 @@ async function smashImages(album) {
   }
 }
 
-async function resizeImage(album) {
+function setPhotoPathOut(inPath, suffix) {
 
-  let photos = _fdb.getAlbumPhotos(album);
+  let pathObj = path.parse(inPath);
+  let pathOutDir = pathObj.dir;
+  let basePath = pathOutDir.substring(0, pathOutDir.indexOf('albums') + 6);
+  let albumName = _.camelCase(pathOutDir.substring(basePath.length + 1, pathOutDir.length));
 
-  for (let photo of photos) {
-    let newValue = calculateAspectRatioFit(photo.origWidth, photo.origHeight, 1600, 1600);
-    console.log('Resizing Photo: ', photo.album, ' --> ', photo.name);
-
-    let photoPath = path.join(photo.directory, photo.name);
-    let photoOut = photoPath.replace('PhotoLib', 'PhotoOut');
-    //await fse.ensureDir(path.dirname(photoOut));
-
-    jimp.read(photoPath)
-      .then(image => {
-        return image
-          .resize(newValue.width, newValue.height) // resize
-          .quality(95) // set JPEG quality
-          .greyscale() // set greyscale
-          .write(photoOut); // save
-      })
-      .catch(err => {
-        console.error(err);
-      });
+  let newPath = path.join(basePath, albumName);
+  let newFileName = _.camelCase(pathObj.name);
+  if (suffix != null) {
+     newFileName = newFileName + suffix;
   }
+  newFileName = newFileName + pathObj.ext;
+  newPath = path.join(newPath, newFileName)
+  newPath = newPath.replace('PhotoLib', 'PhotoOut');
+
+  return newPath
 }
 
 function waterMark(photo) {
@@ -181,6 +168,7 @@ function waterMark(photo) {
 
   return wm;
 }
+
 function  setValue(item) {
   let val = null;
   if (item == null) {
