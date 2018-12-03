@@ -89,32 +89,32 @@ async function smashImages(album) {
           .then(image => {
             return image
               .quality(95)
-              .write(setPhotoPathOut(photoPathIn, '_A1'))
+              .write(setPhotoPathOut(photoPathIn, null)) // vs '_A1'
           })
 
-          .then(image => {
-            return image
-              .sepia()
-              .write(setPhotoPathOut(photoPathIn, '_SP'));
-          })
-
-          .then(image => {
-            return image
-              .greyscale()
-              .write(setPhotoPathOut(photoPathIn, '_GR'));
-          })
-
-          .then(image => {
-            return image
-              .convolute([[-2, -1, 0], [-1, 1, 1], [0, 1, 2]])
-              .write(setPhotoPathOut(photoPathIn, '_EB'));
-          })
-
-          .then(image => {
-            return image
-              .posterize(4)
-              .write(setPhotoPathOut(photoPathIn, '_PZ'));
-          })
+          // .then(image => {
+          //   return image
+          //     .sepia()
+          //     .write(setPhotoPathOut(photoPathIn, '_SP'));
+          // })
+          //
+          // .then(image => {
+          //   return image
+          //     .greyscale()
+          //     .write(setPhotoPathOut(photoPathIn, '_GR'));
+          // })
+          //
+          // .then(image => {
+          //   return image
+          //     .convolute([[-2, -1, 0], [-1, 1, 1], [0, 1, 2]])
+          //     .write(setPhotoPathOut(photoPathIn, '_EB'));
+          // })
+          //
+          // .then(image => {
+          //   return image
+          //     .posterize(4)
+          //     .write(setPhotoPathOut(photoPathIn, '_PZ'));
+          // })
 
           .catch(err => {
             console.error(err);
