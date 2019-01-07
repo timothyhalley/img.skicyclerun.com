@@ -6,7 +6,6 @@ const vfs = require('vinyl-fs');
 const map = require('map-stream');
 const r2 = require("r2");
 const asyncDone = require('async-done');
-const test = require('./test.js');
 
 // node basics
 // & functions libs
@@ -94,7 +93,6 @@ gulp.task('szImages', function(done) {
     .pipe(gm(function(gmfile, done) {
 
       //console.log('Image Starting block --> ', gmfile.source)
-      console.log('lastChance: ', test.returnTrue())
 
       // working -->
       // lastChance = getGeoAddress(gmfile.source)
