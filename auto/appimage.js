@@ -34,7 +34,7 @@ async function smashImages(album) {
     let photoPathIn = path.join(photo.directory, photo.name);
     if (fs.existsSync(photoPathIn)) {
       let newValue = calculateAspectRatioFit(photo.origWidth, photo.origHeight, 1600, 1600);
-      console.log('Processing Photo: ', photo.album, ' --> ', photo.name);
+      console.log('\tPhoto --> ', photo.name);
 
       let setLegendVertRows = null;
 
@@ -81,7 +81,7 @@ async function smashImages(album) {
 
             return image
               .print(font, 10, setLegendVertRows[0], setValue(photo.album))
-              .print(font, 10, setLegendVertRows[1], setValue(photo.circa))
+              .print(font, 10, setLegendVertRows[1], setValue(photo.DTcirca))
               .print(font, 10, setLegendVertRows[2], setValue(photo.address0))
               .print(font, 10, setLegendVertRows[3], setValue(photo.GPSPosition))
           })
@@ -153,8 +153,8 @@ function waterMark(photo) {
 
   let wm = photo.album
 
-  if (photo.circa != null) {
-    wm = wm + '\r\n' + photo.circa;
+  if (photo.DTcirca != null) {
+    wm = wm + '\r\n' + photo.DTcirca;
   }
 
   if (photo.address0 != null) {

@@ -65,11 +65,14 @@ module.exports = {
         mime: photoExif.MIMEType,
         dir: path.dirname(photo),
         directory: photoExif.Directory,
-        circa: null,
+        DTepoch: null,
+        DTcirca: null,
         address0: null,
         address1: null,
         timeZone: null,
         GPSPosition: null,
+        GPSLatitude: null,
+        GPSLongitude: null,
         origSize: photoExif.ImageSize,
         origWidth: photoExif.ImageWidth,
         origHeight: photoExif.ImageHeight,
@@ -83,6 +86,10 @@ module.exports = {
         // Get GPS info if exist
         // console.debug('EXIF Data: \n', photoExif) //DUMP EXIF INFO TO CONSOLE!
         if (typeof(photoExif.GPSPosition) != 'undefined') {
+
+          // Google Maps DMS2DEC
+          photoObj.GPSLatitude = photoExif.GPSLatitude;
+          photoObj.GPSLongitude = photoExif.GPSLongitude;
 
           let gurl = gMapURL + photoExif.GPSLatitude + ', ' + photoExif.GPSLongitude + '&key=' + gMapApiKey
           let gres = await r2(gurl).json;
@@ -110,7 +117,8 @@ module.exports = {
 
         // get Dates for Photo
         let dtObj = getPhotoDate(photoExif);
-        photoObj.circa = getOriginDate(dtObj);
+        photoObj.DTepoch = getOriginDate(dtObj);
+        photoObj.DTcirca = moment(photoObj.DTepoc).format('LLLL');
 
         // Serialize obj into lowDB!
         let pObj = _.merge({}, photoObj); //, dtObj, photoExif);
@@ -158,7 +166,7 @@ function getOriginDate(dObj) {
   let dtSetVal = new Date();
   _.forIn(dObj, function(val, key) {
     if (key.includes('DateTime') && val < dtSetVal) {
-      dtSetVal = moment(val).format('LLLL');
+      dtSetVal = moment(val).format('x');
     }
   })
 
