@@ -1,8 +1,9 @@
 'use strict'
 // app library functions:
 const _f = require('./appfunc.js');
-const _fdb = require('./appdb.js');
-const _fim = require('./appimage.js')
+const _lowDB = require('./applowdb.js');
+const _awsDB = require('./appawsdb.js');
+const _fim = require('./appimage.js');
 
 // Node core:
 const path = require('path');
@@ -14,6 +15,7 @@ const globby = require('globby');
 const baseDir = '../../../skicyclerun/PhotoLib/';
 const subDirPath = 'albums/**/'
 const imgItems = '*.{heic,jpg,jpeg,gif,png,HEIC,JPG,JPEG,GIF,PNG}';
+const AWSTable = 'Photos';
 
 console.log('... getting all photos and album info ...');
 
@@ -21,12 +23,16 @@ console.log('... getting all photos and album info ...');
 
   try {
 
-    await _fdb.dbInit();
+    // await _lowDB.dbInit();
+    //
+    // let globPath = baseDir + subDirPath + imgItems;
+    // await _f.getMetaInfo(globPath);
+    // let albums = await _lowDB.getAlbums()
+    // await _fim.processAlbums(albums);
 
-    let globPath = baseDir + subDirPath + imgItems;
-    await _f.getMetaInfo(globPath);
-    let albums = await _fdb.getAlbums()
-    await _fim.processAlbums(albums);
+    //AWS work
+    await _awsDB.tableExist(AWSTable);
+
 
   } catch (e) {
     console.error('ERROR: ', e);
