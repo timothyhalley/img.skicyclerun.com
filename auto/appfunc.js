@@ -8,7 +8,7 @@
 'use strict'
 
 // app library functions:
-const _fdb = require('./applowdb.js');
+const _lowDB = require('./applowdb.js');
 
 
 const fs = require('fs');
@@ -57,7 +57,7 @@ module.exports = {
       let photoKey = photoAlbum + '-' + photoName;
 
       const photoObj = {
-        album: getAlbumName(photo),
+        album: _.camelCase(getAlbumName(photo)),
         key: _.camelCase(getAlbumName(photo) + path.basename(photo)),
         name: path.basename(photo),
         ext: path.extname(photo),
@@ -79,52 +79,46 @@ module.exports = {
         origBtyes: photoExif.FileSize
       }
 
-      // insert check if already exist in DB.JSON
-      let addPhoto = _fdb.photoExist(photoObj.key);
-      if (addPhoto) {
+      // Get GPS info if exist
+      // console.debug('EXIF Data: \n', photoExif) //DUMP EXIF INFO TO CONSOLE!
+      if (typeof(photoExif.GPSPosition) != 'undefined') {
 
-        // Get GPS info if exist
-        // console.debug('EXIF Data: \n', photoExif) //DUMP EXIF INFO TO CONSOLE!
-        if (typeof(photoExif.GPSPosition) != 'undefined') {
+        // Google Maps DMS2DEC
+        photoObj.GPSLatitude = photoExif.GPSLatitude;
+        photoObj.GPSLongitude = photoExif.GPSLongitude;
 
-          // Google Maps DMS2DEC
-          photoObj.GPSLatitude = photoExif.GPSLatitude;
-          photoObj.GPSLongitude = photoExif.GPSLongitude;
-
-          let gurl = gMapURL + photoExif.GPSLatitude + ', ' + photoExif.GPSLongitude + '&key=' + gMapApiKey
-          let gres = await r2(gurl).json;
-          //console.log('return URL from gAPI: \n', gres); //gres.results[0].formatted_address, '\n', gres.results[1].formatted_address, '\n', gres.results[2].formatted_address)
-          try {
-            if (gres != null) {
-              if (typeof gres.results[0].formatted_address !== 'undefined') {
-                photoObj.address0 = gres.results[0].formatted_address;
-              }
-              if (typeof gres.results[1].formatted_address !== 'undefined') {
-                photoObj.address1 = gres.results[1].formatted_address;
-              }
+        let gurl = gMapURL + photoExif.GPSLatitude + ', ' + photoExif.GPSLongitude + '&key=' + gMapApiKey
+        let gres = await r2(gurl).json;
+        //console.log('return URL from gAPI: \n', gres); //gres.results[0].formatted_address, '\n', gres.results[1].formatted_address, '\n', gres.results[2].formatted_address)
+        try {
+          if (gres != null) {
+            if (typeof gres.results[0].formatted_address !== 'undefined') {
+              photoObj.address0 = gres.results[0].formatted_address;
             }
-          } catch (error) {
-            console.log('Error: ', error, '\n\nURL from gAPI: \n', gres); //gres.results[0].formatted_address, '\n', gres.results[1].formatted_address, '\n', gres.results[2].formatted_address)
+            if (typeof gres.results[1].formatted_address !== 'undefined') {
+              photoObj.address1 = gres.results[1].formatted_address;
+            }
           }
-          photoObj.timeZone = geoTz(photoExif.GPSLatitude, photoExif.GPSLongitude);
-
-          photoObj.GPSPosition = photoExif.GPSPosition;
-          console.log(' position --> ', photoObj.GPSPosition)
-
-        } else {
-          console.log(' warning --> no GPS information...')
+        } catch (error) {
+          console.log('Error: ', error, '\n\nURL from gAPI: \n', gres); //gres.results[0].formatted_address, '\n', gres.results[1].formatted_address, '\n', gres.results[2].formatted_address)
         }
+        photoObj.timeZone = geoTz(photoExif.GPSLatitude, photoExif.GPSLongitude);
 
-        // get Dates for Photo
-        let dtObj = getPhotoDate(photoExif);
-        photoObj.DTepoch = getOriginDate(dtObj);
-        photoObj.DTcirca = moment(photoObj.DTepoc).format('LLLL');
+        photoObj.GPSPosition = photoExif.GPSPosition;
+        console.log(' position --> ', photoObj.GPSPosition)
 
-        // Serialize obj into lowDB!
-        let pObj = _.merge({}, photoObj); //, dtObj, photoExif);
-        await _fdb.upsert(pObj);
-
+      } else {
+        console.log(' warning --> no GPS information...')
       }
+
+      // get Dates for Photo
+      let dtObj = getPhotoDate(photoExif);
+      photoObj.DTepoch = getOriginDate(dtObj);
+      photoObj.DTcirca = moment(photoObj.DTepoch).format('LLLL');
+
+      // Serialize obj into lowDB!
+      let pObj = _.merge({}, photoObj); //, dtObj, photoExif);
+      await _lowDB.upsert(pObj);
 
     }
 
@@ -163,14 +157,21 @@ function getPhotoDate(exif) {
 
 function getOriginDate(dObj) {
 
-  let dtSetVal = new Date();
+  // console.log('HERE ARE THE DATES: ', dObj, '\n')
+  let dtLow = new Date();
+  let mDT = dtLow;
+
   _.forIn(dObj, function(val, key) {
-    if (key.includes('DateTime') && val < dtSetVal) {
-      dtSetVal = moment(val).format('x');
+
+    mDT = moment(val);
+    if (!isNaN(mDT) && mDT < dtLow) {
+      dtLow = mDT;
+      // console.log('down date: ', dtLow, ' vs. ', mDT)
     }
+
   })
 
-  return dtSetVal;
+  return moment(dtLow).unix();
 }
 
 function getAlbumName(pathOf1Photo) {

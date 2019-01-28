@@ -23,15 +23,16 @@ console.log('... getting all photos and album info ...');
 
   try {
 
-    // await _lowDB.dbInit();
-    //
-    // let globPath = baseDir + subDirPath + imgItems;
-    // await _f.getMetaInfo(globPath);
-    // let albums = await _lowDB.getAlbums()
-    // await _fim.processAlbums(albums);
+    await _lowDB.dbInit();
+
+    let globPath = baseDir + subDirPath + imgItems;
+    await _f.getMetaInfo(globPath);
+    let albums = await _lowDB.getAlbums();
+    await _fim.processAlbums(albums);
 
     //AWS work
-    await _awsDB.tableExist(AWSTable);
+    await _awsDB.genTable(AWSTable);
+    await _awsDB.loadData(AWSTable);
 
 
   } catch (e) {

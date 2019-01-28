@@ -21,7 +21,9 @@ module.exports = {
   },
 
   upsert: function(photoObj) {
-    //console.log('adding photoobj to JSON', photoObj)
+
+    // console.log('upsert photoobj to JSON', photoObj)
+
     db.get('photos')
       .upsert(photoObj)
       .write()
@@ -43,7 +45,7 @@ module.exports = {
       .filter({key: photoKey})
       .value()
 
-    return _.isEmpty(photoData);
+    return (photoKey == photoData[0].key) ? true : false;
   },
 
   getAlbums: function() {

@@ -125,7 +125,7 @@ async function smashImages(album) {
       }
 
     } else {
-      console.warn('WARNING: PHOTO does not exist - reported by db.JSON (purge db.JSON - rerun app!)')
+      console.warn('WARNING: PHOTO JPG on drive not found. No updates to db.JSON for photo item: \t', photo.name)
     }
   }
 }
