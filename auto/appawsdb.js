@@ -8,8 +8,10 @@ const _ = require('lodash');
 const path = require('path');
 
 // NODE: AWS library
-// Docs:
-// --> https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html
+// Docs: https://docs.aws.amazon.com/index.html#lang/en_us
+// -->  https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html
+//      https://aws.amazon.com/sdk-for-node-js/
+// https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/s3-examples.html
 
 const AWS = require("aws-sdk");
 AWS.config.apiVersions = {
@@ -21,6 +23,7 @@ AWS.config.update({
 
 const dynamodb = new AWS.DynamoDB();
 const docClient = new AWS.DynamoDB.DocumentClient();
+const S3 = new AWS.S3({apiVersion: '2006-03-01'});
 
 module.exports = {
 
@@ -33,7 +36,7 @@ module.exports = {
       // create the AWS DynamoDB table
       console.log('Creating table: ', dbTable)
       await createDBTable(dbTable);
-      await sleep(5000);
+      await sleepyTime(5000);
 
     } else {
 
@@ -45,13 +48,15 @@ module.exports = {
   },
 
   loadData: async function(dbTable) {
-    await sendData(dbTable);
+
+    await AWSUpdateDBS3(dbTable);
+
   }
 }
 
 // ****************************************************************************
 // AWS Helper Functions------------------------------------------------------------
-async function sendData(dbTable) {
+async function AWSUpdateDBS3(dbTable) {
 
   let albums = await _lowDB.getAlbums()
   for (let album of albums) {
@@ -62,19 +67,29 @@ async function sendData(dbTable) {
       console.log('\t S3 upsert photo --> ', photo.name)
 
       try {
-        var items = buildInsert(photo);
-        var results = docClient.put(items).promise();
-        //console.log(buildInsert(photo))
+        let DBitems = DBParams(photo);
+        var dbres = docClient.put(DBitems).promise();
+        let S3items =  S3Params(photo);
+        console.log('S3 copy params: ', S3items)
+
       } catch (e) {
         console.error('ERROR: problems inserting data into table --> ', e);
+        return false;
       }
-
     }
   }
 
 }
 
-function buildInsert(p) {
+function S3Params(photoObj) {
+
+  let pName = photoObj.name;
+  console.log(pName);
+
+  return pName;
+}
+
+function DBParams(p) {
 
   let iData = {
     TableName: "Photos",
@@ -104,7 +119,7 @@ function buildInsert(p) {
   return iData;
 }
 
-function sleep(ms) {
+function sleepyTime(ms) {
   console.log('... Pausing for ', ms, ' millseconds for AWS')
   return new Promise(resolve => setTimeout(resolve, ms));
 }
