@@ -56,16 +56,9 @@ module.exports = {
       let photoAlbum = getAlbumName(photo);
       let photoKey = photoAlbum + '-' + photoName;
 
-      // create output pathObj
-      let objPath = photo.split(path.sep);
-      console.log('objPath ', objPath
-    )
-      let oPath = path.parse(photo);
-      let nPath = path.normalize(oPath.dir) // .split(path.sep).slice(-1)//[0];
-      let outPath = nPath.replace('PhotoLib', 'PhotoOut');
-      //lastPath = lastPath + _.camelCase(lastDir) + path.sep + _.camelCase(photoName);
+      let outPath = fmtPhotoPath(photo);
+      console.log('new out path: ', outPath)
 
-      //console.log('this is the last directory name: ', outPath)
 
       const photoObj = {
         album: _.camelCase(photoAlbum),
@@ -141,6 +134,47 @@ module.exports = {
 }
 
 //// Helper Functions:
+function fmtPhotoPath(inPath) {
+
+  // // create output pathObj
+  // let objPath = photo.split(path.sep);
+  // console.log('objPath ', objPath, '\nLENGTH', objPath.length)
+  // let newPath = null;
+  // let xP = false;
+  // let iLen = objPath.length;
+  // for (let i = 1; i <= iLen; ++i) {
+  //   tokPath = objPath.shift();
+  //   if (i == 1) {
+  //     newPath = tokPath;
+  //   } else {
+  //     newPath = newPath + path.sep + tokPath;
+  //   }
+  // }
+  // console.log('old new PATH == \n', photo, '\n', newPath);
+
+  let oPath = path.parse(inPath);
+  oPath.dir = oPath.dir.replace('PhotoLib', 'PhotoOut');
+
+  // note: only one layer from ALBUM directory thus no subdirectories.
+  let endAlbums = oPath.dir.lastIndexOf('albums') + 7
+  let albumName = oPath.dir.substring(endAlbums, oPath.dir.length);
+  let cmlPart = _.camelCase(albumName);
+  console.log('camel this: ', cmlPart, ' with this ', albumName)
+
+  oPath.dir = oPath.dir.replace(albumName, cmlPart);
+  console.log('New directory: ', oPath.dir)
+
+  return path.format(oPath);
+
+  //let nPath = path.normalize(oPath.dir) // .split(path.sep).slice(-1)//[0];
+
+  //lastPath = lastPath + _.camelCase(lastDir) + path.sep + _.camelCase(photoName);
+
+  //console.log('this is the last directory name: ', outPath)
+}
+
+
+
 function getPhotoDate(exif) {
 
   const dObj = {
