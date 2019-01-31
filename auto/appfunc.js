@@ -56,14 +56,26 @@ module.exports = {
       let photoAlbum = getAlbumName(photo);
       let photoKey = photoAlbum + '-' + photoName;
 
+      // create output pathObj
+      let objPath = photo.split(path.sep);
+      console.log('objPath ', objPath
+    )
+      let oPath = path.parse(photo);
+      let nPath = path.normalize(oPath.dir) // .split(path.sep).slice(-1)//[0];
+      let outPath = nPath.replace('PhotoLib', 'PhotoOut');
+      //lastPath = lastPath + _.camelCase(lastDir) + path.sep + _.camelCase(photoName);
+
+      //console.log('this is the last directory name: ', outPath)
+
       const photoObj = {
-        album: _.camelCase(getAlbumName(photo)),
-        key: _.camelCase(getAlbumName(photo) + path.basename(photo)),
-        name: path.basename(photo),
+        album: _.camelCase(photoAlbum),
+        key: _.camelCase(photoAlbum + path.basename(photo)),
+        name: _.camelCase(path.basename(photo)),
         ext: path.extname(photo),
         type: photoExif.FileType,
         mime: photoExif.MIMEType,
         dir: path.dirname(photo),
+        outDir: _.camelCase(path.dirname(photo)),
         directory: photoExif.Directory,
         DTepoch: null,
         DTcirca: null,
