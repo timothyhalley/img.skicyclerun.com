@@ -46,30 +46,30 @@ module.exports = {
 
     for (let photo of photos) {
 
-      console.info(++n, ' photo: ', path.basename(photo))
 
       // Get all PHOTO EXIF DATA
       const photoExif = await exiftool.read(photo, '-fast');
 
-      let photoName = path.basename(photo);
-      let photoDir = path.dirname(photo);
-      let photoAlbum = getAlbumName(photo);
-      let photoKey = photoAlbum + '-' + photoName;
-
+      let objPhotoPath = path.parse(photo);
+      let photoName = objPhotoPath.name;
+      let photoDir = objPhotoPath.dir;
+      let photoAlbum = getAlbumName(objPhotoPath.dir);
+      let photoKey = photoAlbum + photoName;
       let outPath = fmtPhotoPath(photo);
-      console.log('new out path: ', outPath)
+      // console.log('new out path: ', outPath)
 
+      console.info(++n, ' photo: ', path.basename(photo))
 
       const photoObj = {
         album: _.camelCase(photoAlbum),
-        key: _.camelCase(photoAlbum + path.basename(photo)),
-        name: _.camelCase(path.basename(photo)),
-        ext: path.extname(photo),
+        key: _.camelCase(photoKey),
+        name: _.camelCase(photoName),
+        ext: objPhotoPath.ext,
         type: photoExif.FileType,
         mime: photoExif.MIMEType,
-        dir: path.dirname(photo),
-        outDir: _.camelCase(path.dirname(photo)),
-        directory: photoExif.Directory,
+        absdir: photoExif.Directory,
+        inPath: photo,
+        s3Path: outPath,
         DTepoch: null,
         DTcirca: null,
         address0: null,
@@ -136,22 +136,6 @@ module.exports = {
 //// Helper Functions:
 function fmtPhotoPath(inPath) {
 
-  // // create output pathObj
-  // let objPath = photo.split(path.sep);
-  // console.log('objPath ', objPath, '\nLENGTH', objPath.length)
-  // let newPath = null;
-  // let xP = false;
-  // let iLen = objPath.length;
-  // for (let i = 1; i <= iLen; ++i) {
-  //   tokPath = objPath.shift();
-  //   if (i == 1) {
-  //     newPath = tokPath;
-  //   } else {
-  //     newPath = newPath + path.sep + tokPath;
-  //   }
-  // }
-  // console.log('old new PATH == \n', photo, '\n', newPath);
-
   let oPath = path.parse(inPath);
   oPath.dir = oPath.dir.replace('PhotoLib', 'PhotoOut');
 
@@ -159,21 +143,13 @@ function fmtPhotoPath(inPath) {
   let endAlbums = oPath.dir.lastIndexOf('albums') + 7
   let albumName = oPath.dir.substring(endAlbums, oPath.dir.length);
   let cmlPart = _.camelCase(albumName);
-  console.log('camel this: ', cmlPart, ' with this ', albumName)
-
   oPath.dir = oPath.dir.replace(albumName, cmlPart);
-  console.log('New directory: ', oPath.dir)
+
+  oPath.base = _.camelCase(oPath.name) + oPath.ext;
 
   return path.format(oPath);
 
-  //let nPath = path.normalize(oPath.dir) // .split(path.sep).slice(-1)//[0];
-
-  //lastPath = lastPath + _.camelCase(lastDir) + path.sep + _.camelCase(photoName);
-
-  //console.log('this is the last directory name: ', outPath)
 }
-
-
 
 function getPhotoDate(exif) {
 
@@ -220,11 +196,9 @@ function getOriginDate(dObj) {
   return moment(dtLow).unix();
 }
 
-function getAlbumName(pathOf1Photo) {
+function getAlbumName(pDir) {
 
-  var albumPath = path.dirname(pathOf1Photo);
-  var valStart = albumPath.lastIndexOf('/') + 1;
-  var valEnd = albumPath.length;
-  var albumName = albumPath.substring(valStart, valEnd);
-  return albumName;
+  let aPath = pDir.split(path.sep);
+  return aPath[aPath.length-1];
+
 }

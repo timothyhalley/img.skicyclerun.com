@@ -31,8 +31,7 @@ async function smashImages(album) {
 
   for (let photo of photos) {
     //console.log('does file exist? ', fs.existsSync(photo), '\n', photo )
-    let photoPathIn = path.join(photo.directory, photo.name);
-    if (fs.existsSync(photoPathIn)) {
+    if (fs.existsSync(photo.inPath)) {
       let newValue = calculateAspectRatioFit(photo.origWidth, photo.origHeight, 1600, 1600);
       console.log('\tPhoto --> ', photo.name);
 
@@ -51,7 +50,7 @@ async function smashImages(album) {
           setLegendVertRows = [newValue.height - wmTextHeight * 4,  newValue.height - wmTextHeight * 3, newValue.height - wmTextHeight * 2, newValue.height - wmTextHeight * 1];
         })
 
-        await jimp.read(photoPathIn)
+        await jimp.read(photo.inPath)
 
           .then(image => (image.clone()
             .resize(newValue.width, newValue.height) // resize
@@ -89,31 +88,31 @@ async function smashImages(album) {
           .then(image => {
             return image
               .quality(95)
-              .write(setPhotoPathOut(photoPathIn, null)) // vs '_A1'
+              .write(setPhotoPathOut(photo.inPath, null)) // vs '_A1'
           })
 
           // .then(image => {
           //   return image
           //     .sepia()
-          //     .write(setPhotoPathOut(photoPathIn, '_SP'));
+          //     .write(setPhotoPathOut(photo.inPath, '_SP'));
           // })
           //
           // .then(image => {
           //   return image
           //     .greyscale()
-          //     .write(setPhotoPathOut(photoPathIn, '_GR'));
+          //     .write(setPhotoPathOut(photo.inPath, '_GR'));
           // })
           //
           // .then(image => {
           //   return image
           //     .convolute([[-2, -1, 0], [-1, 1, 1], [0, 1, 2]])
-          //     .write(setPhotoPathOut(photoPathIn, '_EB'));
+          //     .write(setPhotoPathOut(photo.inPath, '_EB'));
           // })
           //
           // .then(image => {
           //   return image
           //     .posterize(4)
-          //     .write(setPhotoPathOut(photoPathIn, '_PZ'));
+          //     .write(setPhotoPathOut(photo.inPath, '_PZ'));
           // })
 
           .catch(err => {

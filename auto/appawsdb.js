@@ -12,6 +12,8 @@ const path = require('path');
 // -->  https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html
 //      https://aws.amazon.com/sdk-for-node-js/
 // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/s3-examples.html
+//  https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html
+
 
 const AWS = require("aws-sdk");
 AWS.config.apiVersions = {
@@ -35,13 +37,13 @@ module.exports = {
 
       // create the AWS DynamoDB table
       console.log('Creating table: ', dbTable)
-      await createDBTable(dbTable);
-      await sleepyTime(5000);
+      let tblInfo = createDBTable(dbTable);
+      await sleepyTime(15000);
+      console.log('AWS DynamoDB info - Table Create: ', tblInfo)
 
     } else {
 
-      //purge tabel (aka kill it!)
-      console.log('Note: S3 table already exists: ', dbTable)
+      console.log('Note: S3 table already exists: ', dbTable);
 
     }
 
@@ -49,14 +51,32 @@ module.exports = {
 
   loadData: async function(dbTable) {
 
-    await AWSUpdateDBS3(dbTable);
+    await AWSDBUpdate(dbTable);
 
+  },
+
+  copyS3: async function(dbTable) {
+
+    let result = AWSGetDBItems(dbTable);
   }
 }
 
 // ****************************************************************************
-// AWS Helper Functions------------------------------------------------------------
-async function AWSUpdateDBS3(dbTable) {
+// AWS Helper Functions--------------------------------------------------------
+async function AWSGetDBItems(dbTable) {
+
+  try {
+    let dbitems = DBParams(photo);
+    var dbres = docClient.put(dbitems).promise();
+
+  } catch (e) {
+    console.error('ERROR: problems inserting data into table --> ', e);
+    return false;
+  }
+
+}
+
+async function AWSDBUpdate(dbTable) {
 
   let albums = await _lowDB.getAlbums()
   for (let album of albums) {
@@ -64,13 +84,11 @@ async function AWSUpdateDBS3(dbTable) {
 
     let photos = _lowDB.getAlbumPhotos(album);
     for (let photo of photos) {
-      console.log('\t S3 upsert photo --> ', photo.name)
+      console.log('\t DB upsert photo --> ', photo.name)
 
       try {
-        let DBitems = DBParams(photo);
-        var dbres = docClient.put(DBitems).promise();
-        let S3items =  S3Params(photo);
-        console.log('S3 copy params: ', S3items)
+        let dbitems = DBParams(photo);
+        var dbres = docClient.put(dbitems).promise();
 
       } catch (e) {
         console.error('ERROR: problems inserting data into table --> ', e);
@@ -120,7 +138,8 @@ function DBParams(p) {
 }
 
 function sleepyTime(ms) {
-  console.log('... Pausing for ', ms, ' millseconds for AWS')
+  let secWait = ms / 1000;
+  console.log('... Pausing for ', secWait, ' seconds for AWS to ready table for upserts')
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
@@ -153,7 +172,7 @@ async function createDBTable(dbTable) {
   };
 
   try {
-    var awsInfo = await dynamodb.createTable(params).promise();
+    return await dynamodb.createTable(params).promise();
   } catch (e) {
     console.error('ERROR: can not create table --> ', e);
   }
