@@ -13,8 +13,6 @@ const path = require('path');
 //      https://aws.amazon.com/sdk-for-node-js/
 // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/s3-examples.html
 //  https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html
-
-
 const AWS = require("aws-sdk");
 AWS.config.apiVersions = {
   dynamodb: '2012-08-10',
@@ -57,13 +55,13 @@ module.exports = {
 
   copyS3: async function(dbTable) {
 
-    let result = AWSGetDBItems(dbTable);
+    let result = AWSPutDBItems(dbTable);
   }
 }
 
 // ****************************************************************************
 // AWS Helper Functions--------------------------------------------------------
-async function AWSGetDBItems(dbTable) {
+async function AWSPutDBItems(dbTable) {
 
   try {
     let dbitems = DBParams(photo);
