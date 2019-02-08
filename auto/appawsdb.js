@@ -97,14 +97,6 @@ async function AWSDBUpdate(dbTable) {
 
 }
 
-function S3Params(photoObj) {
-
-  let pName = photoObj.name;
-  console.log(pName);
-
-  return pName;
-}
-
 function DBParams(p) {
 
   let iData = {

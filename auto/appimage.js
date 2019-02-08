@@ -88,14 +88,14 @@ async function smashImages(album) {
           .then(image => {
             return image
               .quality(95)
-              .write(setPhotoPathOut(photo.inPath, null)) // vs '_A1'
+              .write(setPhotoPathOut(photo.inPath, '_OG')) // null vs '_A1'
           })
 
-          // .then(image => {
-          //   return image
-          //     .sepia()
-          //     .write(setPhotoPathOut(photo.inPath, '_SP'));
-          // })
+          .then(image => {
+            return image
+              .sepia()
+              .write(setPhotoPathOut(photo.inPath, '_SP'));
+          })
           //
           // .then(image => {
           //   return image
