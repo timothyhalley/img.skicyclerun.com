@@ -6,10 +6,8 @@
 // --> Style Guide --> https://github.com/airbnb/javascript
 //
 'use strict'
-
 // app library functions:
 const _lowDB = require('./applowdb.js');
-
 
 const fs = require('fs');
 const fse = require('fs-extra');
@@ -35,12 +33,36 @@ const geoTz = require('geo-tz');
 
 module.exports = {
 
+  getWebPhotos: async function(photoPath) {
+
+    // get photos
+    const photos = await globby([photoPath]);
+    console.log('number of photos found: ', photos.length)
+
+    for (let photo of photos) {
+
+      let objPhotoPath = path.parse(photo);
+
+      // get DB keyVal
+      let photoKey = getKeyValue(objPhotoPath);
+
+      let photoData = _lowDB.getPhoto(photoKey);
+
+      console.log('Photo object: ', photoData);
+      //console.log('???Does photo Key EXIST in DB: ', _lowDB.photoExist(photoKey))
+
+    }
+  },
+
   getMetaInfo: async function(albumPath) {
 
     let n = 0;
 
-    let exifVersion = await exiftool.version()
-    console.info('exif tool version: ', exifVersion)
+    // log show EXIF tool version:
+    let exifVersion = await exiftool.version();
+    console.info('exif tool version: ', exifVersion);
+
+    // get photos
     const photos = await globby([albumPath]);
     console.log('number of photos found: ', photos.length)
 
@@ -51,11 +73,8 @@ module.exports = {
       const photoExif = await exiftool.read(photo, '-fast');
 
       let objPhotoPath = path.parse(photo);
-      let photoName = objPhotoPath.name;
-      let photoDir = objPhotoPath.dir;
-      let photoAlbum = getAlbumName(objPhotoPath.dir);
-      let photoKey = photoAlbum + photoName;
-      let outPath = fmtPhotoPath(photo);
+      let photoKey = getKeyValue(objPhotoPath);
+      // let outPath = fmtPhotoPath(photo);
       // console.log('new out path: ', outPath)
 
       console.info(++n, ' photo: ', path.basename(photo))
@@ -69,7 +88,9 @@ module.exports = {
         mime: photoExif.MIMEType,
         absdir: photoExif.Directory,
         inPath: photo,
-        s3Path: outPath,
+        // s3Path: {
+        //   "path1": outPath
+        // },
         DTepoch: null,
         DTcirca: null,
         address0: null,
@@ -133,23 +154,41 @@ module.exports = {
 
 }
 
-//// Helper Functions:
-function fmtPhotoPath(inPath) {
+// Helper Functions:
+function getKeyValue(objPath) {
 
-  let oPath = path.parse(inPath);
-  oPath.dir = oPath.dir.replace('PhotoLib', 'PhotoOut');
+  let regex = /_[A-Z][A-Z]$/g;
+  let photoName = objPath.name;
+  // strip _XX from photoName for primary key
+  if (photoName.match(regex)) {
+    photoName = photoName.replace(regex, '');
+  }
 
-  // note: only one layer from ALBUM directory thus no subdirectories.
-  let endAlbums = oPath.dir.lastIndexOf('albums') + 7
-  let albumName = oPath.dir.substring(endAlbums, oPath.dir.length);
-  let cmlPart = _.camelCase(albumName);
-  oPath.dir = oPath.dir.replace(albumName, cmlPart);
+  let photoDir = objPath.dir;
+  let photoAlbum = getAlbumName(objPath.dir);
 
-  oPath.base = _.camelCase(oPath.name) + oPath.ext;
+  let photoKey = photoAlbum + photoName;
 
-  return path.format(oPath);
-
+  return photoKey;
 }
+
+
+// function fmtPhotoPath(inPath) {
+//
+//   let oPath = path.parse(inPath);
+//   oPath.dir = oPath.dir.replace('PhotoLib', 'PhotoOut');
+//
+//   // note: only one layer from ALBUM directory thus no subdirectories.
+//   let endAlbums = oPath.dir.lastIndexOf('albums') + 7
+//   let albumName = oPath.dir.substring(endAlbums, oPath.dir.length);
+//   let cmlPart = _.camelCase(albumName);
+//   oPath.dir = oPath.dir.replace(albumName, cmlPart);
+//
+//   oPath.base = _.camelCase(oPath.name) + oPath.ext;
+//
+//   return path.format(oPath);
+//
+// }
 
 function getPhotoDate(exif) {
 

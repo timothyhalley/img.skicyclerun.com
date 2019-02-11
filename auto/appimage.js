@@ -19,6 +19,7 @@ module.exports = {
     for (let album of albums) {
       console.log('Processing album: ', album)
       await smashImages(album);
+
     }
   }
 }
@@ -30,8 +31,10 @@ async function smashImages(album) {
   let photos = _fdb.getAlbumPhotos(album);
 
   for (let photo of photos) {
+
     //console.log('does file exist? ', fs.existsSync(photo), '\n', photo )
     if (fs.existsSync(photo.inPath)) {
+
       let newValue = calculateAspectRatioFit(photo.origWidth, photo.origHeight, 1600, 1600);
       console.log('\tPhoto --> ', photo.name);
 
@@ -140,7 +143,7 @@ function setPhotoPathOut(inPath, suffix) {
   let newFileName = _.camelCase(pathObj.name);
   if (suffix != null) {
      newFileName = newFileName + suffix;
-  }
+  };
   newFileName = newFileName + pathObj.ext;
   newPath = path.join(newPath, newFileName)
   newPath = newPath.replace('PhotoLib', 'PhotoOut');

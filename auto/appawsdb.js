@@ -6,6 +6,7 @@ const _lowDB = require('./applowdb.js');
 // NODE: tools library
 const _ = require('lodash');
 const path = require('path');
+const fs = require('fs.promises');
 
 // NODE: AWS library
 // Docs: https://docs.aws.amazon.com/index.html#lang/en_us
@@ -20,6 +21,9 @@ AWS.config.apiVersions = {
 AWS.config.update({
   region: "us-west-2"
 });
+
+const S3BUCKET = 'img.skicyclerun.com';
+const S3ALBUMS = 'albums';
 
 const dynamodb = new AWS.DynamoDB();
 const docClient = new AWS.DynamoDB.DocumentClient();
@@ -55,23 +59,48 @@ module.exports = {
 
   copyS3: async function(dbTable) {
 
-    let result = AWSPutDBItems(dbTable);
+    let result = AWSS3Copy(dbTable);
   }
 }
 
 // ****************************************************************************
 // AWS Helper Functions--------------------------------------------------------
-async function AWSPutDBItems(dbTable) {
+async function AWSS3Copy(dbTable) {
 
-  try {
-    let dbitems = DBParams(photo);
-    var dbres = docClient.put(dbitems).promise();
+  // purpose: copy S3 object from OS location.
+  //          tag object with relevant EXIF awsInfo
+  // Docs:
+  //        https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#putObjectTagging-property
+  //        https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#putObject-property
+  //        https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#upload-property
 
-  } catch (e) {
-    console.error('ERROR: problems inserting data into table --> ', e);
-    return false;
+
+  let albums = await _lowDB.getAlbums()
+  for (let album of albums) {
+    console.log('Image S3 for photo album: ', album);
+
+    let photos = _lowDB.getAlbumPhotos(album);
+    for (let photo of photos) {
+      console.log('\t DB upsert photo --> ', photo.name)
+
+      try {
+
+        let fileData = await fs.readFile(photo.s3Path);
+        let params = {
+          Bucket: S3BUCKET + '/' + S3ALBUMS + '/' + photo.album,
+          Key: photo.name + photo.ext,
+          Body: fileData
+        }
+        let res = s3.putObject(params).promise;
+        console.log('S3 Copy results: ', res)
+
+      } catch (e) {
+        console.error('ERROR: problems uploading file to S3 bucket --> ', e);
+        return false;
+      }
+
+    }
   }
-
 }
 
 async function AWSDBUpdate(dbTable) {

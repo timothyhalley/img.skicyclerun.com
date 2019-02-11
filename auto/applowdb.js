@@ -1,10 +1,11 @@
 'use strict'
 
 // NODE: lowDB library
-const low = require('lowdb')
+const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync')
 const adapter = new FileSync('db.json')
-const db = low(adapter)
+const db = low(adapter);
+
 const _ = require('lodash');
 
 
@@ -18,6 +19,17 @@ module.exports = {
         photos: []
       })
       .write()
+  },
+
+  getPhoto: function(photoKey) {
+
+    let photoData = db.get('photos')
+      .find({ key: photoKey })
+      //.find({ key: 'halleyFamilyScan10'})
+      .value()
+
+    console.log('DB DEBUG: ', photoData);
+    return (photoKey == photoData[0].key) ? photoData : null;
   },
 
   upsert: function(photoObj) {
