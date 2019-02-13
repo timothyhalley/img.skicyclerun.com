@@ -28,7 +28,7 @@ console.log('... getting all photos and album info ...');
 
     // Source albums & photos
     await _lowDB.dbInit();
-    // await _f.getMetaInfo(ALBUMPHOTOS);
+    await _f.getMetaInfo(ALBUMPHOTOS);
     //
     // // Generate images for web style
     // let albums = await _lowDB.getAlbums();

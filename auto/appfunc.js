@@ -15,6 +15,7 @@ const path = require('path');
 const globby = require('globby');
 
 const _ = require('lodash');
+const nanoid = require('nanoid');
 
 // google API
 const keyStore = JSON.parse(fse.readFileSync('./key.json'));
@@ -43,13 +44,20 @@ module.exports = {
 
       let objPhotoPath = path.parse(photo);
 
+      // TODO: generate s3Path
+
+
       // get DB keyVal
-      let photoKey = getKeyValue(objPhotoPath);
+      const photoKey = getKeyValue(objPhotoPath);
 
-      let photoData = _lowDB.getPhoto(photoKey);
+      if (_lowDB.photoExist(photoKey)) {
+        let pObj = _lowDB.getPhoto(photoKey);
+        //console.log('DEBUG: ', pObj)
 
-      console.log('Photo object: ', photoData);
-      //console.log('???Does photo Key EXIST in DB: ', _lowDB.photoExist(photoKey))
+        // TODO: get all existing S3PATH from pOBJ
+      }
+
+      // TODO: add new S3path to s3OBJ and merge pObj with s3Obj
 
     }
   },
@@ -74,23 +82,25 @@ module.exports = {
 
       let objPhotoPath = path.parse(photo);
       let photoKey = getKeyValue(objPhotoPath);
-      // let outPath = fmtPhotoPath(photo);
+      let photoAlbum = getAlbumName(objPhotoPath.dir);
+      let photoName = getPhoneName(objPhotoPath)
+      //let outPath = fmtPhotoPath(photo);
       // console.log('new out path: ', outPath)
 
       console.info(++n, ' photo: ', path.basename(photo))
 
       const photoObj = {
+        key: nanoid(8),
         album: _.camelCase(photoAlbum),
-        key: _.camelCase(photoKey),
+        pKey: _.camelCase(photoKey),
         name: _.camelCase(photoName),
         ext: objPhotoPath.ext,
         type: photoExif.FileType,
         mime: photoExif.MIMEType,
         absdir: photoExif.Directory,
         inPath: photo,
-        // s3Path: {
-        //   "path1": outPath
-        // },
+        s3Path: {
+        },
         DTepoch: null,
         DTcirca: null,
         address0: null,
@@ -155,6 +165,17 @@ module.exports = {
 }
 
 // Helper Functions:
+function getPhoneName(objPath) {
+
+  let regex = /_[A-Z][A-Z]$/g;
+  let photoName = objPath.name;
+  // strip _XX from photoName for primary key
+  if (photoName.match(regex)) {
+    photoName = photoName.replace(regex, '');
+  }
+
+  return photoName;
+}
 function getKeyValue(objPath) {
 
   let regex = /_[A-Z][A-Z]$/g;
@@ -167,28 +188,28 @@ function getKeyValue(objPath) {
   let photoDir = objPath.dir;
   let photoAlbum = getAlbumName(objPath.dir);
 
-  let photoKey = photoAlbum + photoName;
+  let photoKey = photoAlbum + _.capitalize(photoName);
 
   return photoKey;
 }
 
 
-// function fmtPhotoPath(inPath) {
-//
-//   let oPath = path.parse(inPath);
-//   oPath.dir = oPath.dir.replace('PhotoLib', 'PhotoOut');
-//
-//   // note: only one layer from ALBUM directory thus no subdirectories.
-//   let endAlbums = oPath.dir.lastIndexOf('albums') + 7
-//   let albumName = oPath.dir.substring(endAlbums, oPath.dir.length);
-//   let cmlPart = _.camelCase(albumName);
-//   oPath.dir = oPath.dir.replace(albumName, cmlPart);
-//
-//   oPath.base = _.camelCase(oPath.name) + oPath.ext;
-//
-//   return path.format(oPath);
-//
-// }
+function fmtPhotoPath(inPath) {
+
+  let oPath = path.parse(inPath);
+  oPath.dir = oPath.dir.replace('PhotoLib', 'PhotoOut');
+
+  // note: only one layer from ALBUM directory thus no subdirectories.
+  let endAlbums = oPath.dir.lastIndexOf('albums') + 7
+  let albumName = oPath.dir.substring(endAlbums, oPath.dir.length);
+  let cmlPart = _.camelCase(albumName);
+  oPath.dir = oPath.dir.replace(albumName, cmlPart);
+
+  oPath.base = _.camelCase(oPath.name) + oPath.ext;
+
+  return path.format(oPath);
+
+}
 
 function getPhotoDate(exif) {
 

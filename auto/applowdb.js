@@ -1,15 +1,19 @@
 'use strict'
 
+// LOWDB Docs & examples:
+// https://www.diycode.cc/projects/typicode/lowdb
+// https://github.com/typicode/lowdb/tree/master/examples
+// https://devhints.io/lodash
+
+//http://nmotw.in/lowdb/
+
 // NODE: lowDB library
 const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync')
 const adapter = new FileSync('db.json')
 const db = low(adapter);
 
-const _ = require('lodash');
-
-
-// Node core:
+// Node core & other:
 const path = require('path');
 
 module.exports = {
@@ -23,13 +27,21 @@ module.exports = {
 
   getPhoto: function(photoKey) {
 
-    let photoData = db.get('photos')
-      .find({ key: photoKey })
-      //.find({ key: 'halleyFamilyScan10'})
+    let pVal = db.get('photos')
+
+      .find({pKey: photoKey})
+      .value();
+
+    return pVal;
+  },
+
+  photoExist: function(photoKey) {
+
+    let pData = db.get('photos')
+      .find({pKey: photoKey})
       .value()
 
-    console.log('DB DEBUG: ', photoData);
-    return (photoKey == photoData[0].key) ? photoData : null;
+    return (photoKey == pData.pKey) ? true : false;
   },
 
   upsert: function(photoObj) {
@@ -49,15 +61,6 @@ module.exports = {
       .value();
 
     return size;
-  },
-
-  photoExist: function(photoKey) {
-
-    let photoData = db.get('photos')
-      .filter({key: photoKey})
-      .value()
-
-    return (photoKey == photoData[0].key) ? true : false;
   },
 
   getAlbums: function() {

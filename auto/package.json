@@ -27,8 +27,8 @@
     "lodash": "^4.17.11",
     "lowdb": "^1.0.0",
     "moment": "^2.24.0",
-    "r2": "^2.0.1",
-    "shortid": "^2.2.14"
+    "nanoid": "^2.0.1",
+    "r2": "^2.0.1"
   },
   "nodemonConfig": {
     "ignore": [
