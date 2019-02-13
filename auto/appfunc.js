@@ -47,12 +47,24 @@ module.exports = {
       // TODO: generate s3Path
 
 
+
       // get DB keyVal
       const photoKey = getKeyValue(objPhotoPath);
 
       if (_lowDB.photoExist(photoKey)) {
         let pObj = _lowDB.getPhoto(photoKey);
-        //console.log('DEBUG: ', pObj)
+        console.log('DEBUG: ', pObj.s3Path.length)
+        if (pObj.s3Path.length === undefined) {
+          pObj.s3Path['path0'] = photo;
+        } else {
+          let nxtPathNo = pObj.s3Path.length + 1;
+          let newPath = 'path' + nxtPathNok;
+          pObj.s3Path[newPath] = photo;
+        }
+
+        console.log('DEBUG OUT PATH: ', pObj.s3Path)
+
+        // TODO -- need to update object in db.JSON
 
         // TODO: get all existing S3PATH from pOBJ
       }
@@ -193,7 +205,6 @@ function getKeyValue(objPath) {
   return photoKey;
 }
 
-
 function fmtPhotoPath(inPath) {
 
   let oPath = path.parse(inPath);
@@ -202,8 +213,7 @@ function fmtPhotoPath(inPath) {
   // note: only one layer from ALBUM directory thus no subdirectories.
   let endAlbums = oPath.dir.lastIndexOf('albums') + 7
   let albumName = oPath.dir.substring(endAlbums, oPath.dir.length);
-  let cmlPart = _.camelCase(albumName);
-  oPath.dir = oPath.dir.replace(albumName, cmlPart);
+  oPath.dir = oPath.dir.replace(albumName, _.camelCase(albumName));
 
   oPath.base = _.camelCase(oPath.name) + oPath.ext;
 
