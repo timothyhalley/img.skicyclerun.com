@@ -46,25 +46,27 @@ module.exports = {
 
       // TODO: generate s3Path
 
-
-
       // get DB keyVal
       const photoKey = getKeyValue(objPhotoPath);
 
       if (_lowDB.photoExist(photoKey)) {
         let pObj = _lowDB.getPhoto(photoKey);
-        console.log('DEBUG: ', pObj.s3Path.length)
-        if (pObj.s3Path.length === undefined) {
-          pObj.s3Path['path0'] = photo;
-        } else {
-          let nxtPathNo = pObj.s3Path.length + 1;
-          let newPath = 'path' + nxtPathNok;
-          pObj.s3Path[newPath] = photo;
-        }
 
-        console.log('DEBUG OUT PATH: ', pObj.s3Path)
+        let pKey = 'path' + Object.keys(pObj.s3Path).length
+        pObj.s3Path[pKey] = photo;
+        await _lowDB.upsert(pObj);
 
-        // TODO -- need to update object in db.JSON
+        // let nxtPathNo = pObj.s3Path.length + 1;
+        // let pItem = 'path' + nxtPathNo;
+        // let newPathObj = { pItem: photo };
+        // console.log('ORI OBJ: ', oriObj, ' + ', newPathObj)
+        //oriObj.assign(newPathObj, ' + ', newPathObj);
+
+        //pObj.s3Path.assign(pObj.s3Path, newPathObj);
+
+        // console.log('DEBUG OUT NEW OBJ\n: ', pObjNew)
+        //await _lowDB.upsert(pObjNew);
+
 
         // TODO: get all existing S3PATH from pOBJ
       }
@@ -111,8 +113,7 @@ module.exports = {
         mime: photoExif.MIMEType,
         absdir: photoExif.Directory,
         inPath: photo,
-        s3Path: {
-        },
+        s3Path: {},
         DTepoch: null,
         DTcirca: null,
         address0: null,

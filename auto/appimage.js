@@ -99,24 +99,24 @@ async function smashImages(album) {
               .sepia()
               .write(setPhotoPathOut(photo.inPath, '_SP'));
           })
-          //
-          // .then(image => {
-          //   return image
-          //     .greyscale()
-          //     .write(setPhotoPathOut(photo.inPath, '_GR'));
-          // })
-          //
-          // .then(image => {
-          //   return image
-          //     .convolute([[-2, -1, 0], [-1, 1, 1], [0, 1, 2]])
-          //     .write(setPhotoPathOut(photo.inPath, '_EB'));
-          // })
-          //
-          // .then(image => {
-          //   return image
-          //     .posterize(4)
-          //     .write(setPhotoPathOut(photo.inPath, '_PZ'));
-          // })
+
+          .then(image => {
+            return image
+              .greyscale()
+              .write(setPhotoPathOut(photo.inPath, '_GR'));
+          })
+
+          .then(image => {
+            return image
+              .convolute([[-2, -1, 0], [-1, 1, 1], [0, 1, 2]])
+              .write(setPhotoPathOut(photo.inPath, '_EB'));
+          })
+
+          .then(image => {
+            return image
+              .posterize(4)
+              .write(setPhotoPathOut(photo.inPath, '_PZ'));
+          })
 
           .catch(err => {
             console.error(err);

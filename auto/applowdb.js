@@ -4,6 +4,7 @@
 // https://www.diycode.cc/projects/typicode/lowdb
 // https://github.com/typicode/lowdb/tree/master/examples
 // https://devhints.io/lodash
+// https://github.com/typicode/lodash-id
 
 //http://nmotw.in/lowdb/
 
@@ -49,7 +50,7 @@ module.exports = {
     // console.log('upsert photoobj to JSON', photoObj)
 
     db.get('photos')
-      .upsert(photoObj)
+      .upsert(photoObj, 'pKey')
       .write()
 
   },
@@ -117,6 +118,7 @@ module.exports = {
 //LowDB lodash function library:
 db._.mixin({
   upsert: function(collection, obj, key) {
+    //console.log('UPSERT: ', key)
     key = key || 'key';
     for (var i = 0; i < collection.length; i++) {
       var el = collection[i];

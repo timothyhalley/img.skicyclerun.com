@@ -29,20 +29,20 @@ console.log('... getting all photos and album info ...');
     // Source albums & photos
     await _lowDB.dbInit();
     // await _f.getMetaInfo(ALBUMPHOTOS);
-    //
-    // // Generate images for web style
+    // //
+    // // // Generate images for web style
     // let albums = await _lowDB.getAlbums();
     // await _fim.processAlbums(albums);
-
-    // Gather all images into local db
-    await _f.getWebPhotos(S3PHOTOS);
-
-    // //AWS dynamoDB work
+    //
+    // // Gather all images into local db
+    // await _f.getWebPhotos(S3PHOTOS);
+    //
+    // // //AWS dynamoDB work
     // await _awsDB.genTable(AWSTable);
     // await _awsDB.loadData(AWSTable);
-    //
+    // //
     // //AWS S3 work
-    // await _awsDB.copyS3(AWSTable);
+    await _awsDB.copyS3(AWSTable);
 
   } catch (e) {
     console.error('ERROR: ', e);

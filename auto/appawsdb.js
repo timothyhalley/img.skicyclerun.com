@@ -74,7 +74,6 @@ async function AWSS3Copy(dbTable) {
   //        https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#putObject-property
   //        https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#upload-property
 
-
   let albums = await _lowDB.getAlbums()
   for (let album of albums) {
     console.log('Image S3 for photo album: ', album);
@@ -82,25 +81,47 @@ async function AWSS3Copy(dbTable) {
     let photos = _lowDB.getAlbumPhotos(album);
     for (let photo of photos) {
       console.log('\t DB upsert photo --> ', photo.name)
+      // console.log('\t\t s3Path: ', photo.s3Path)
 
-      try {
+      var s3Obj = photo.s3Path;
+      for (let sPath of Object.keys(s3Obj)) {
+        var srcPath = s3Obj[sPath];
+        //console.log('sPath: ', sPath, '   ', srcPath);
 
-        let fileData = await fs.readFile(photo.s3Path);
-        let params = {
-          Bucket: S3BUCKET + '/' + S3ALBUMS + '/' + photo.album,
-          Key: photo.name + photo.ext,
-          Body: fileData
+        try {
+
+          let fileData = await fs.readFile(srcPath);
+          let srcFile = getSrcFileName(srcPath);
+          console.log('\t\tUploading file: ', srcFile);
+          let params = {
+            Bucket: S3BUCKET + '/' + S3ALBUMS + '/' + photo.album,
+            Key: srcFile,
+            Body: fileData
+          }
+          var putObjectPromise = S3.putObject(params).promise();
+          putObjectPromise.then(function(data) {
+            console.log('Success');
+          }).catch(function(err) {
+            console.log(err);
+          });
+
+        } catch (e) {
+          console.error('ERROR: problems uploading file to S3 bucket --> ', e);
+          return false;
         }
-        let res = s3.putObject(params).promise;
-        console.log('S3 Copy results: ', res)
 
-      } catch (e) {
-        console.error('ERROR: problems uploading file to S3 bucket --> ', e);
-        return false;
+
+        // Set ContentType
+
+        // Set tags for lookup on the other side
+
       }
-
     }
   }
+}
+
+function getSrcFileName(srcPath) {
+  return srcPath.split('/').pop();
 }
 
 async function AWSDBUpdate(dbTable) {
@@ -132,7 +153,7 @@ function DBParams(p) {
     TableName: "Photos",
     Item: {
       album: p.album,
-      key: p.key,
+      key: p.pKey,
       name: p.name,
       ext: p.ext,
       type: p.type,
