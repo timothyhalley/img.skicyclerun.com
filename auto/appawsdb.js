@@ -1,4 +1,13 @@
 'use strict'
+// NODE: AWS library
+// Docs:  https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html
+//        https://docs.aws.amazon.com/sdk-for-javascript/index.html#lang/en_us
+//        https://docs.aws.amazon.com/s3/index.html#lang/en_us
+//        https://docs.aws.amazon.com/index.html#lang/en_us
+// -->    https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html
+//        https://aws.amazon.com/sdk-for-node-js/
+//        https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/s3-examples.html
+//        https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html
 
 // app library tools:
 const _lowDB = require('./applowdb.js');
@@ -8,12 +17,6 @@ const _ = require('lodash');
 const path = require('path');
 const fs = require('fs.promises');
 
-// NODE: AWS library
-// Docs: https://docs.aws.amazon.com/index.html#lang/en_us
-// -->  https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html
-//      https://aws.amazon.com/sdk-for-node-js/
-// https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/s3-examples.html
-//  https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB/DocumentClient.html
 const AWS = require("aws-sdk");
 AWS.config.apiVersions = {
   dynamodb: '2012-08-10',
@@ -24,6 +27,7 @@ AWS.config.update({
 
 const S3BUCKET = 'img.skicyclerun.com';
 const S3ALBUMS = 'albums';
+const COPYRIGHT = "© https://skicyclerun.com ©";
 
 const dynamodb = new AWS.DynamoDB();
 const docClient = new AWS.DynamoDB.DocumentClient();
@@ -93,31 +97,44 @@ async function AWSS3Copy(dbTable) {
           let fileData = await fs.readFile(srcPath);
           let srcFile = getSrcFileName(srcPath);
           console.log('\t\tUploading file: ', srcFile);
+          let tagPhoto = getObjectTags(photo);
           let params = {
             Bucket: S3BUCKET + '/' + S3ALBUMS + '/' + photo.album,
+            ContentType: 'Image/' + _.lowerCase(photo.type),
             Key: srcFile,
-            Body: fileData
+            Body: fileData,
+            Tagging: tagPhoto
           }
-          var putObjectPromise = S3.putObject(params).promise();
-          putObjectPromise.then(function(data) {
-            console.log('Success');
-          }).catch(function(err) {
-            console.log(err);
-          });
+          var resETag = await S3.putObject(params).promise();
+          //console.log('\t\tUploaded: ', resETag);
 
         } catch (e) {
           console.error('ERROR: problems uploading file to S3 bucket --> ', e);
           return false;
         }
 
-
-        // Set ContentType
-
-        // Set tags for lookup on the other side
-
       }
     }
   }
+}
+
+function getObjectTags(p) {
+
+  let copyRight = 'Copyright=skicyclerun.com';
+  let dateEpoch = 'DTepoch=' + p.DTepoch;
+  let timeZone = 'timeZone=' + p.timeZone;
+  let gpsLat = 'GPSLatitude=' + p.GPSLatitude;
+  let gpsLon = 'GPSLongitude=' + p.GPSLongitude;
+  let tagsep = '&';
+
+  let tagItems = copyRight + tagsep;
+  tagItems = tagItems + dateEpoch + tagsep;
+  tagItems = tagItems + timeZone + tagsep;
+  tagItems = tagItems + gpsLat + tagsep;
+  tagItems = tagItems + gpsLon;
+
+  // console.log('tagItems = \n', tagItems)
+  return tagItems;
 }
 
 function getSrcFileName(srcPath) {
