@@ -121,6 +121,9 @@ async function AWSS3Copy(dbTable) {
 function getObjectTags(p) {
 
   let copyRight = 'Copyright=skicyclerun.com';
+  let pAlbum = 'photoAlbum=' + p.album;
+  let pOriName = 'photoName='  + p.name;
+  let pKey = 'pKey=' + p.pKey;
   let dateEpoch = 'DTepoch=' + p.DTepoch;
   let timeZone = 'timeZone=' + p.timeZone;
   let gpsLat = 'GPSLatitude=' + p.GPSLatitude;
@@ -128,6 +131,9 @@ function getObjectTags(p) {
   let tagsep = '&';
 
   let tagItems = copyRight + tagsep;
+  tagItems = tagItems + pKey + tagsep;
+  tagItems = tagItems + pAlbum + tagsep;
+  tagItems = tagItems + pOriName + tagsep;
   tagItems = tagItems + dateEpoch + tagsep;
   tagItems = tagItems + timeZone + tagsep;
   tagItems = tagItems + gpsLat + tagsep;

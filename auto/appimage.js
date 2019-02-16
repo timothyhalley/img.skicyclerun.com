@@ -11,6 +11,7 @@ const path = require('path');
 const _ = require('lodash');
 
 const COPYRIGHT = "© https://skicyclerun.com ©";
+const JIMPQUALITY = 100;
 
 module.exports = {
 
@@ -26,6 +27,7 @@ module.exports = {
 
 // ****************************************************************************
 // Helper Functions------------------------------------------------------------
+// https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/image-optimization
 async function smashImages(album) {
 
   let photos = _fdb.getAlbumPhotos(album);
@@ -90,7 +92,7 @@ async function smashImages(album) {
 
           .then(image => {
             return image
-              .quality(95)
+              .quality(JIMPQUALITY)
               .write(setPhotoPathOut(photo.inPath, '_OG')) // null vs '_A1'
           })
 

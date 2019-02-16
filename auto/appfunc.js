@@ -44,34 +44,18 @@ module.exports = {
 
       let objPhotoPath = path.parse(photo);
 
-      // TODO: generate s3Path
-
       // get DB keyVal
       const photoKey = getKeyValue(objPhotoPath);
-
       if (_lowDB.photoExist(photoKey)) {
         let pObj = _lowDB.getPhoto(photoKey);
 
+        // Generate next path# eg path0 + 1, path1 + 1 etc...
         let pKey = 'path' + Object.keys(pObj.s3Path).length
+
         pObj.s3Path[pKey] = photo;
         await _lowDB.upsert(pObj);
 
-        // let nxtPathNo = pObj.s3Path.length + 1;
-        // let pItem = 'path' + nxtPathNo;
-        // let newPathObj = { pItem: photo };
-        // console.log('ORI OBJ: ', oriObj, ' + ', newPathObj)
-        //oriObj.assign(newPathObj, ' + ', newPathObj);
-
-        //pObj.s3Path.assign(pObj.s3Path, newPathObj);
-
-        // console.log('DEBUG OUT NEW OBJ\n: ', pObjNew)
-        //await _lowDB.upsert(pObjNew);
-
-
-        // TODO: get all existing S3PATH from pOBJ
       }
-
-      // TODO: add new S3path to s3OBJ and merge pObj with s3Obj
 
     }
   },
@@ -97,7 +81,7 @@ module.exports = {
       let objPhotoPath = path.parse(photo);
       let photoKey = getKeyValue(objPhotoPath);
       let photoAlbum = getAlbumName(objPhotoPath.dir);
-      let photoName = getPhoneName(objPhotoPath)
+      let photoName = getPhotoName(objPhotoPath)
       //let outPath = fmtPhotoPath(photo);
       // console.log('new out path: ', outPath)
 
@@ -178,7 +162,7 @@ module.exports = {
 }
 
 // Helper Functions:
-function getPhoneName(objPath) {
+function getPhotoName(objPath) {
 
   let regex = /_[A-Z][A-Z]$/g;
   let photoName = objPath.name;
@@ -189,6 +173,7 @@ function getPhoneName(objPath) {
 
   return photoName;
 }
+
 function getKeyValue(objPath) {
 
   let regex = /_[A-Z][A-Z]$/g;
@@ -197,11 +182,9 @@ function getKeyValue(objPath) {
   if (photoName.match(regex)) {
     photoName = photoName.replace(regex, '');
   }
-
   let photoDir = objPath.dir;
   let photoAlbum = getAlbumName(objPath.dir);
-
-  let photoKey = photoAlbum + _.capitalize(photoName);
+  let photoKey = photoAlbum + _.capitalize(photoName.replace(' ', ''));
 
   return photoKey;
 }
