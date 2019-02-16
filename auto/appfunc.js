@@ -16,7 +16,6 @@ const globby = require('globby');
 
 const _ = require('lodash');
 const nanoid = require('nanoid');
-var flatten = require('flat');
 
 // google API
 //https://developers.google.com/maps/documentation/geocoding/start
