@@ -16,8 +16,10 @@ const globby = require('globby');
 
 const _ = require('lodash');
 const nanoid = require('nanoid');
+var flatten = require('flat');
 
 // google API
+//https://developers.google.com/maps/documentation/geocoding/start
 const keyStore = JSON.parse(fse.readFileSync('./key.json'));
 const gMapApiKey = keyStore.googleAPI.key;
 const gMapURL = keyStore.googleAPI.url;
@@ -100,8 +102,6 @@ module.exports = {
         s3Path: {},
         DTepoch: null,
         DTcirca: null,
-        address0: null,
-        address1: null,
         timeZone: null,
         GPSPosition: null,
         GPSLatitude: null,
@@ -109,7 +109,8 @@ module.exports = {
         origSize: photoExif.ImageSize,
         origWidth: photoExif.ImageWidth,
         origHeight: photoExif.ImageHeight,
-        origBtyes: photoExif.FileSize
+        origBtyes: photoExif.FileSize,
+        address: {}
       }
 
       // Get GPS info if exist
@@ -125,16 +126,45 @@ module.exports = {
         //console.log('return URL from gAPI: \n', gres); //gres.results[0].formatted_address, '\n', gres.results[1].formatted_address, '\n', gres.results[2].formatted_address)
         try {
           if (gres != null) {
-            if (typeof gres.results[0].formatted_address !== 'undefined') {
-              photoObj.address0 = gres.results[0].formatted_address;
+
+            if (gres.status == 'OK') {
+              console.log(' RESULTS ', gres.results.length, '\n', gres)
+              for (let i = 0; i < gres.results.length; i++ ) {
+                  let addLoc = null;
+                  let addLen = 0;
+                  if (typeof gres.results[i].formatted_address !== 'undefined') {
+                    addLoc = gres.results[i].formatted_address;
+                    addLen = gres.results[i].formatted_address.length;
+                  } else {
+                    addLoc = gres.plus_code.compound_code;
+                  }
+
+                  if (addLen < gres.plus_code.compound_code.length) {
+                    addLoc = gres.plus_code.compound_code;
+                    addLoc = addLoc.substring(addLoc.indexOf(' ')+1, addLoc.length);
+                  }
+                // Generate next address# etc...
+                let pKey = 'address' + Object.keys(photoObj.address).length
+                photoObj.address[pKey] = addLoc;
+
+              }
+            } else if (gres.status == 'ZERO_RESULTS') {
+                console.log(' BAD ', gres)
+                let locCode = gres.plus_code.compound_code;
+                locCode = locCode.substring(locCode.indexOf(' ')+1, locCode.length)
+                console.log('GENERAL: ', locCode);
+                let pKey = 'address' + Object.keys(photoObj.address).length
+                photoObj.address[pKey] = locCode;
+            } else {
+              console.log('ERROR --> GAPI: ', gres)
+              photoObj.address = 'UNKNOWN LOCATION'
             }
-            if (typeof gres.results[1].formatted_address !== 'undefined') {
-              photoObj.address1 = gres.results[1].formatted_address;
-            }
+
           }
         } catch (error) {
-          console.log('Error: ', error, '\n\nURL from gAPI: \n', gres); //gres.results[0].formatted_address, '\n', gres.results[1].formatted_address, '\n', gres.results[2].formatted_address)
+          console.log('Error: ', error);
         }
+
         photoObj.timeZone = geoTz(photoExif.GPSLatitude, photoExif.GPSLongitude);
 
         photoObj.GPSPosition = photoExif.GPSPosition;
@@ -155,13 +185,45 @@ module.exports = {
 
     }
 
-    console.log('done with all photos');
+    console.log('done with all photos...');
     exiftool.end();
+
   }
 
 }
 
 // Helper Functions:
+function flattenDeep(arr1) {
+  const result = arr1.reduce(
+    (result, {
+      name,
+      tags
+    }) => result
+    .concat(tags.map(tag => ({
+      name,
+      ...tag
+    }))),
+    []
+  );
+  return result;
+}
+function flatten(input) {
+  const stack = [...input];
+  const res = [];
+  while (stack.length) {
+    // pop value from stack
+    const next = stack.pop();
+    if (Array.isArray(next)) {
+      // push back array items, won't modify the original input
+      stack.push(...next);
+    } else {
+      res.push(next);
+    }
+  }
+  //reverse to restore input order
+  return res.reverse();
+}
+
 function getPhotoName(objPath) {
 
   let regex = /_[A-Z][A-Z]$/g;

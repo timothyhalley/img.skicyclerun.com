@@ -11,7 +11,7 @@ const path = require('path');
 const _ = require('lodash');
 
 const COPYRIGHT = "© https://skicyclerun.com ©";
-const JIMPQUALITY = 100;
+const JIMPQUALITY = 15;
 
 module.exports = {
 

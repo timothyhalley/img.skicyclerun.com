@@ -20,6 +20,7 @@
     "exiftool": "0.0.3",
     "exiftool-vendored": "^6.3.0",
     "fast-exif": "^1.0.1",
+    "flat": "^4.1.0",
     "fs-extra": "^7.0.1",
     "geo-tz": "^4.0.2",
     "globby": "^8.0.2",
