@@ -136,12 +136,10 @@ module.exports = {
                     addLen = gres.results[i].formatted_address.length;
                   } else {
                     addLoc = gres.plus_code.compound_code;
-                  }
-
-                  if (addLen < gres.plus_code.compound_code.length) {
                     addLoc = gres.plus_code.compound_code;
                     addLoc = addLoc.substring(addLoc.indexOf(' ')+1, addLoc.length);
                   }
+
                 // Generate next address# etc...
                 let pKey = 'address' + Object.keys(photoObj.address).length
                 photoObj.address[pKey] = addLoc;
