@@ -127,7 +127,7 @@ module.exports = {
           if (gres != null) {
 
             if (gres.status == 'OK') {
-              console.log(' RESULTS ', gres.results.length, '\n', gres)
+
               for (let i = 0; i < gres.results.length; i++ ) {
                   let addLoc = null;
                   let addLen = 0;
@@ -148,10 +148,10 @@ module.exports = {
 
               }
             } else if (gres.status == 'ZERO_RESULTS') {
-                console.log(' BAD ', gres)
+
                 let locCode = gres.plus_code.compound_code;
                 locCode = locCode.substring(locCode.indexOf(' ')+1, locCode.length)
-                console.log('GENERAL: ', locCode);
+
                 let pKey = 'address' + Object.keys(photoObj.address).length
                 photoObj.address[pKey] = locCode;
             } else {
