@@ -86,7 +86,7 @@ async function smashImages(album) {
             return image
               .print(font, 10, setLegendVertRows[0], setValue(photo.album))
               .print(font, 10, setLegendVertRows[1], setValue(photo.DTcirca))
-              .print(font, 10, setLegendVertRows[2], setValue(photo.address0))
+              .print(font, 10, setLegendVertRows[2], setValue(photo.address.address0))
               .print(font, 10, setLegendVertRows[3], setValue(photo.GPSPosition))
           })
 
