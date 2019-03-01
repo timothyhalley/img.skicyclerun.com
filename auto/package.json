@@ -15,7 +15,7 @@
   "license": "ISC",
   "devDependencies": {
     "@google/maps": "^0.5.5",
-    "aws-sdk": "^2.404.0",
+    "aws-sdk": "^2.412.0",
     "dms2dec": "^1.1.0",
     "exiftool": "0.0.3",
     "exiftool-vendored": "^6.3.0",

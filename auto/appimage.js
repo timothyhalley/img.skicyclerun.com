@@ -5,6 +5,7 @@
 const _fdb = require('./applowdb.js');
 
 const fs = require('fs');
+const fsp = fs.promises;
 const fse = require('fs-extra');
 const jimp = require('jimp');
 const path = require('path');
@@ -43,6 +44,8 @@ async function smashImages(album) {
       let setLegendVertRows = null;
 
       try {
+
+        let photoQuality = await getPhotoQuality(photo.inPath)
 
         await jimp.loadFont(jimp.FONT_SANS_32_WHITE).then(font => {
           let wmTextWidth = jimp.measureText(font, COPYRIGHT)
@@ -92,7 +95,7 @@ async function smashImages(album) {
 
           .then(image => {
             return image
-              .quality(JIMPQUALITY)
+              .quality(photoQuality)
               .write(setPhotoPathOut(photo.inPath, '_OG')) // null vs '_A1'
           })
 
@@ -125,7 +128,7 @@ async function smashImages(album) {
           });
 
       } catch (e) {
-        console.log('Found larger problem: ', e)
+        console.error('Found larger problem: ', e)
       }
 
     } else {
@@ -151,6 +154,43 @@ function setPhotoPathOut(inPath, suffix) {
   newPath = newPath.replace('PhotoLib', 'PhotoOut');
 
   return newPath
+}
+
+async function getPhotoQuality(photo) {
+
+  let stats = await fsp.stat(photo)
+
+  let fileSizeInMB = Math.round(stats["size"] / 1024000.0);
+  let photoQual = JIMPQUALITY;
+
+  if (fileSizeInMB <= .5) {
+    photoQual = 100
+  } else if (fileSizeInMB <= .75) {
+    photoQual = 80
+  } else if (fileSizeInMB <= 1.0) {
+    photoQual = 75
+  } else if (fileSizeInMB <= 1.25) {
+    photoQual = 60
+  } else if (fileSizeInMB <= 1.50) {
+    photoQual = 55
+  } else if (fileSizeInMB <= 1.75) {
+    photoQual = 50
+  } else if (fileSizeInMB <= 2.0) {
+    photoQual = 45
+  } else if (fileSizeInMB <= 2.25) {
+    photoQual = 40
+  } else if (fileSizeInMB <= 2.50) {
+    photoQual = 35
+  } else if (fileSizeInMB <= 2.75) {
+    photoQual = 30
+  } else if (fileSizeInMB <= 3.0) {
+    photoQual = 25
+  } else if (fileSizeInMB <= 3.25) {
+    photoQual = 20
+  }
+
+  return photoQual;
+
 }
 
 function waterMark(photo) {

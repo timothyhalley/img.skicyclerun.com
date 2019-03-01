@@ -119,7 +119,7 @@ module.exports = {
 db._.mixin({
   upsert: function(collection, obj, key) {
     //console.log('UPSERT: ', key)
-    key = key || 'key';
+    key = key || 'pKey';
     for (var i = 0; i < collection.length; i++) {
       var el = collection[i];
       if(el[key] === obj[key]){
