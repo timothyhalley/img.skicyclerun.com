@@ -163,18 +163,20 @@ module.exports = {
         }
 
         photoObj.timeZone = geoTz(photoExif.GPSLatitude, photoExif.GPSLongitude);
-
+        // console.debug('TIME ZONE: ', photoObj.timeZone)
         photoObj.GPSPosition = photoExif.GPSPosition;
-        console.log(' position --> ', photoObj.GPSPosition)
+        // console.debug(' position --> ', photoObj.GPSPosition)
 
       } else {
-        console.log(' warning --> no GPS information...')
+        console.error(' warning --> no GPS information...')
       }
 
       // get Dates for Photo
       let dtObj = getPhotoDate(photoExif);
-      photoObj.DTepoch = getOriginDate(dtObj);
-      photoObj.DTcirca = moment(photoObj.DTepoch).format('LLLL');
+      let dtCirca = getOriginDate(dtObj);
+      photoObj.DTcirca = moment(dtCirca).format('LLLL');
+      //console.log('DATE WHAT HAPPENED: ', dtObj, '  vs  ', moment(photoObj.DTepoch).format('LLLL'))
+      photoObj.DTepoch = moment(dtCirca).unix();
 
       // Serialize obj into lowDB!
       let pObj = _.merge({}, photoObj); //, dtObj, photoExif);
@@ -301,12 +303,13 @@ function getOriginDate(dObj) {
     mDT = moment(val);
     if (!isNaN(mDT) && mDT < dtLow) {
       dtLow = mDT;
-      // console.log('down date: ', dtLow, ' vs. ', mDT)
     }
 
   })
 
-  return moment(dtLow).unix();
+  // console.log('DATE SELECTED: ', moment(dtLow).format('LLLL'))
+  //return moment(dtLow).unix();
+  return dtLow;
 }
 
 function getAlbumName(pDir) {

@@ -49,7 +49,7 @@ module.exports = {
 
     } else {
 
-      console.log('Note: S3 table already exists: ', dbTable);
+      console.log('Note: DynamoDB table already exists: ', dbTable);
 
     }
 
@@ -98,6 +98,7 @@ async function AWSS3Copy(dbTable) {
           let srcFile = getSrcFileName(srcPath);
           console.log('\t\tUploading file: ', srcFile);
           let tagPhoto = getObjectTags(photo);
+
           let params = {
             Bucket: S3BUCKET + '/' + S3ALBUMS + '/' + photo.album,
             ContentType: 'Image/' + _.lowerCase(photo.type),
