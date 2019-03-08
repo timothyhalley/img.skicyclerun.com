@@ -38,11 +38,19 @@ module.exports = {
 
   photoExist: function(photoKey) {
 
-    let pData = db.get('photos')
-      .find({pKey: photoKey})
-      .value()
+    try {
+      let pData = db.get('photos')
+        .find({
+          pKey: photoKey
+        })
+        .value()
 
-    return (photoKey == pData.pKey) ? true : false;
+      return (photoKey == pData.pKey) ? true : false;
+      
+    } catch (e) {
+      return false;
+    }
+
   },
 
   upsert: function(photoObj) {

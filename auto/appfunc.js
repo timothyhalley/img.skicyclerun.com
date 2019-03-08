@@ -35,6 +35,34 @@ const geoTz = require('geo-tz');
 
 module.exports = {
 
+  cleanLowDB: async function(photoPath) {
+
+    // get photos
+    const photos = await globby([photoPath]);
+    console.log('Cleaning photos in DB: ', photos.length)
+
+    for (let photo of photos) {
+
+      let objPhotoPath = path.parse(photo);
+
+      // get DB keyVal
+      // console.debug('ojb Photo Path: ', getKeyValue(objPhotoPath))
+      const photoKey = getKeyValue(objPhotoPath);
+
+      if (_lowDB.photoExist(photoKey)) {
+        let pObj = _lowDB.getPhoto(photoKey);
+
+        // // Generate next path# eg path0 + 1, path1 + 1 etc...
+        // let pKey = 'path' + Object.keys(pObj.s3Path).length
+
+        pObj.s3Path = {};
+        await _lowDB.upsert(pObj);
+
+      }
+
+    }
+  },
+
   getWebPhotos: async function(photoPath) {
 
     // get photos
@@ -46,7 +74,9 @@ module.exports = {
       let objPhotoPath = path.parse(photo);
 
       // get DB keyVal
+      // console.debug('ojb Photo Path: ', getKeyValue(objPhotoPath))
       const photoKey = getKeyValue(objPhotoPath);
+
       if (_lowDB.photoExist(photoKey)) {
         let pObj = _lowDB.getPhoto(photoKey);
 

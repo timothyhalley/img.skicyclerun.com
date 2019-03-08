@@ -26,15 +26,16 @@ console.log('... getting all photos and album info ...');
 
   try {
 
-    // Source albums & photos
+    // // Source albums & photos
     await _lowDB.dbInit();
     await _f.getMetaInfo(ALBUMPHOTOS);
 
     // Generate images for web style
     let albums = await _lowDB.getAlbums();
-    await _fim.processAlbums(albums);
-    
+    // await _fim.processAlbums(albums);
+
     // Gather all images into local db
+    await _f.cleanLowDB(S3PHOTOS)
     await _f.getWebPhotos(S3PHOTOS);
 
     // AWS dynamoDB work
